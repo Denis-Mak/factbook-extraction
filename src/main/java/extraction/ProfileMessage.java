@@ -1,13 +1,24 @@
 package extraction;
 
+import it.factbook.dictionary.WordForm;
+
 import java.util.List;
 
 /**
  *
  */
 public class ProfileMessage {
+    private long profileId;
     private String initialQuery;
-    private List<List<List<String>>> queryLines;
+    private List<List<List<WordForm>>> queryLines;
+
+    public long getProfileId() {
+        return profileId;
+    }
+
+    public void setProfileId(long profileId) {
+        this.profileId = profileId;
+    }
 
     public String getInitialQuery() {
         return initialQuery;
@@ -17,11 +28,11 @@ public class ProfileMessage {
         this.initialQuery = initialQuery;
     }
 
-    public List<List<List<String>>> getQueryLines() {
+    public List<List<List<WordForm>>> getQueryLines() {
         return queryLines;
     }
 
-    public void setQueryLines(List<List<List<String>>> queryLines) {
+    public void setQueryLines(List<List<List<WordForm>>> queryLines) {
         this.queryLines = queryLines;
     }
 
@@ -29,9 +40,9 @@ public class ProfileMessage {
     public int hashCode(){
         int result = 7;
         if (initialQuery != null) result = 31 * result + initialQuery.hashCode();
-        for (List<List<String>> line: queryLines){
-            for (List<String> wordgram: line){
-                for (String word: wordgram){
+        for (List<List<WordForm>> line: queryLines){
+            for (List<WordForm> wordgram: line){
+                for (WordForm word: wordgram){
                     if (word != null) result = 31 * result + word.hashCode();
                 }
             }
@@ -46,7 +57,7 @@ public class ProfileMessage {
         if (!pm.initialQuery.equals(this.initialQuery)) return false;
         for (int lineIdx = 0; lineIdx < queryLines.size(); lineIdx++){
             for (int wgIdx = 0; wgIdx < queryLines.get(lineIdx).size(); wgIdx++){
-                for (String word: queryLines.get(lineIdx).get(wgIdx)){
+                for (WordForm word: queryLines.get(lineIdx).get(wgIdx)){
                     if (!pm.queryLines.get(lineIdx).get(wgIdx).contains(word)) return false;
                 }
             }

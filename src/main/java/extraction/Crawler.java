@@ -20,7 +20,6 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.util.Arrays;
 
 /**
  *
@@ -28,25 +27,34 @@ import java.util.Arrays;
 @Component
 public class Crawler implements MessageListener{
     private static final Logger log = LoggerFactory.getLogger(Crawler.class);
+
     @Autowired
     AnnotationConfigApplicationContext context;
+
+    @Autowired
+    private CrawlerLog crawlerLog;
 
     private static ObjectMapper jsonMapper = new ObjectMapper();
 
     @Override
     public void onMessage(Message message) {
-        System.out.println("Crawler recieved: " + Arrays.toString(message.getBody()));
-        SearchResultsMessage searchResultsMessage = new SearchResultsMessage();
         try {
-            searchResultsMessage = jsonMapper.readValue(message.getBody(), SearchResultsMessage.class);
+            SearchResultsMessage searchResultsMessage = jsonMapper.readValue(message.getBody(), SearchResultsMessage.class);
+            for (Link link: searchResultsMessage.getLinks()){
+                long startDownload = System.currentTimeMillis();
+                String articleBody = downloadArticle(link.getUrl());
+                crawlerLog.logDownloadedArticles(searchResultsMessage.getProfileId(),
+                        searchResultsMessage.getSearchEngine(),
+                        searchResultsMessage.getProfileVersion(),
+                        articleBody,
+                        startDownload);
+            }
+
+            this.context.close();
         } catch (IOException e) {
             log.error("Error during unpack SearchResultsMessage: {}", e);
         }
-        for (Link link: searchResultsMessage.links){
-            downloadArticle(link.getUrl());
-        }
 
-        this.context.close();
     }
 
     public String downloadArticle(String url){

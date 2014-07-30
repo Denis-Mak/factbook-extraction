@@ -19,9 +19,19 @@
 
         <jackson.version>2.3.3</jackson.version>
         <tika.version>1.5</tika.version>
+        <bonecp.version>0.7.1.RELEASE</bonecp.version>
+        <guava.version>10.0.1</guava.version>
+        <commons-codec.version>1.8</commons-codec.version>
     </properties>
 
     <dependencies>
+        <!-- Internal dependencies -->
+        <dependency>
+            <groupId>it.factbook</groupId>
+            <artifactId>factbook-dictionary</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+
         <!-- Libraries for unit testing -->
         <dependency>
             <groupId>junit</groupId>
@@ -70,6 +80,11 @@
             <artifactId>spring-rabbit</artifactId>
             <version>${spring.rabbit.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-jdbc</artifactId>
+            <version>${spring.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -80,6 +95,24 @@
             <groupId>org.apache.tika</groupId>
             <artifactId>tika-parsers</artifactId>
             <version>${tika.version}</version>
+        </dependency>
+
+        <!-- DB pool connections -->
+        <dependency>
+            <groupId>com.jolbox</groupId>
+            <artifactId>bonecp</artifactId>
+            <version>${bonecp.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>${guava.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>${commons-codec.version}</version>
         </dependency>
     </dependencies>
 </project>
