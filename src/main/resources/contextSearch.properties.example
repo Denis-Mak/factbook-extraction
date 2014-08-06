@@ -1,0 +1,14 @@
+# Context search engine properties
+csHost = your.sphinx.host
+csPort = 9312
+csSqlPort = 9306
+#
+# main index names key format index.<golemId>.<index num (simply 1,2,...)>
+# add index num only if have many indexes for one golem
+# one golem can have more than one index
+index.1         = facts_ru
+index.2         = facts_en
+#
+# realtime indexes
+rt_index.1      = facts_ru_rt
+rt_index.2      = facts_en_rt

@@ -1,6 +1,7 @@
 package extraction;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import it.factbook.dictionary.WordForm;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -13,11 +14,11 @@ public class ProfileMessageTest {
         testProfileMessage.setInitialQuery("Vasya");
         testProfileMessage.setQueryLines(Arrays.asList(
                 Arrays.asList(
-                        Arrays.asList("Line1.WG1.Word1", "Line1.WG1.Word2"),
-                        Arrays.asList("Line1.WG2.Word1", "Line1.WG2.Word2")
+                        Arrays.asList(new WordForm.Builder().word("Line1.WG1.Word1").build(), new WordForm.Builder().word("Line1.WG1.Word2").build()),
+                        Arrays.asList(new WordForm.Builder().word("Line1.WG2.Word1").build(), new WordForm.Builder().word("Line1.WG2.Word2").build())
                 ),
                 Arrays.asList(
-                        Arrays.asList("Line2.WG1.Word1", "Line2.WG1.Word2")
+                        Arrays.asList(new WordForm.Builder().word("Line2.WG1.Word1").build(), new WordForm.Builder().word("Line2.WG1.Word2").build())
                 )
         ));
     }

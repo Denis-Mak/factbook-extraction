@@ -1,6 +1,8 @@
 package extraction;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import config.AmqpConfig;
 import org.apache.tika.Tika;
 import org.apache.tika.io.TikaInputStream;
 import org.apache.tika.metadata.Metadata;
@@ -11,10 +13,10 @@ import org.apache.tika.parser.pdf.PDFParser;
 import org.apache.tika.sax.BodyContentHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -29,10 +31,10 @@ public class Crawler implements MessageListener{
     private static final Logger log = LoggerFactory.getLogger(Crawler.class);
 
     @Autowired
-    AnnotationConfigApplicationContext context;
+    private CrawlerLog crawlerLog;
 
     @Autowired
-    private CrawlerLog crawlerLog;
+    private AmqpTemplate amqpTemplate;
 
     private static ObjectMapper jsonMapper = new ObjectMapper();
 
@@ -40,21 +42,34 @@ public class Crawler implements MessageListener{
     public void onMessage(Message message) {
         try {
             SearchResultsMessage searchResultsMessage = jsonMapper.readValue(message.getBody(), SearchResultsMessage.class);
+            log.debug("Received message. ProfileId: {}. Qty of links: {}.", searchResultsMessage.getProfileId(), searchResultsMessage.getLinks().size());
             for (Link link: searchResultsMessage.getLinks()){
                 long startDownload = System.currentTimeMillis();
                 String articleBody = downloadArticle(link.getUrl());
                 crawlerLog.logDownloadedArticles(searchResultsMessage.getProfileId(),
                         searchResultsMessage.getSearchEngine(),
                         searchResultsMessage.getProfileVersion(),
+                        link,
                         articleBody,
                         startDownload);
+                if (articleBody.length() > 0) {
+                    DocumentMessage documentMessage = new DocumentMessage(link, articleBody);
+                    passDocumentToFactSaver(documentMessage);
+                }
             }
-
-            this.context.close();
         } catch (IOException e) {
             log.error("Error during unpack SearchResultsMessage: {}", e);
         }
 
+    }
+
+    private void passDocumentToFactSaver(DocumentMessage documentMessage) {
+        try {
+            String json = jsonMapper.writeValueAsString(documentMessage);
+            amqpTemplate.convertAndSend(AmqpConfig.factSaverExchange().getName(), "#", json);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
     }
 
     public String downloadArticle(String url){

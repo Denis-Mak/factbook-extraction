@@ -1,0 +1,3 @@
+amqp.url        = host_where_rabbitmq_running
+amqp.username   = your_rabbitmq_user
+amqp.password   = your_password

@@ -13,13 +13,13 @@ public class FarooClientTest {
 
     @Test
     public void testGetQueries() throws Exception {
-        List<String> queries = fc.getQueries(MessageFixtures.profileMessage);
+        List<FarooClient.Query> queries = fc.getQueries(MessageFixtures.profileMessage);
         assertEquals(2, queries.size());
     }
 
     @Test
     public void testGetLinks() throws Exception {
-        List<Link> links = fc.getLinks("apple iphone");
-        assertEquals(10, links.size());
+       List<Link> links = fc.getLinks(new FarooClient.Query(2, "iphone ios"));
+       assertEquals(10, links.size());
     }
 }

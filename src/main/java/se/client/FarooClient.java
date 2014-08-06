@@ -1,7 +1,9 @@
 package se.client;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import config.AmqpConfig;
 import extraction.CrawlerLog;
 import extraction.Link;
 import extraction.ProfileMessage;
@@ -32,11 +34,11 @@ public class FarooClient implements MessageListener {
     private static final Logger log = LoggerFactory.getLogger(FarooClient.class);
     private static ObjectMapper jsonMapper = new ObjectMapper();
 
-    private class Query{
+    public static class Query{
         private int golemId;
         private String query;
 
-        Query(int golemId, String query){
+        public Query(int golemId, String query){
             this.golemId    = golemId;
             this.query      = query;
         }
@@ -52,17 +54,20 @@ public class FarooClient implements MessageListener {
     public void onMessage(Message message) {
         try {
             ProfileMessage profileMessage = jsonMapper.readValue(message.getBody(), ProfileMessage.class);
+            log.debug("Received message. Profile ID: {}, {} lines.", profileMessage.getProfileId(), profileMessage.getQueryLines().size());
             long profileVersion = System.currentTimeMillis();
             List<Query> queries = getQueries(profileMessage);
             for(Query query: queries){
                 List<Link> foundLinks = getLinks(query);
                 List<Link> linksToCrawl = crawlerLog.getLinksToCrawl(foundLinks);
-                SearchResultsMessage searchResultsMessage = new SearchResultsMessage(linksToCrawl);
-                searchResultsMessage.setProfileId(profileMessage.getProfileId());
-                searchResultsMessage.setSearchEngine(SEARCH_ENGINE);
-                searchResultsMessage.setProfileVersion(profileVersion);
-                passResultsToCrawler(searchResultsMessage);
-                crawlerLog.logFoundLinks(profileMessage.getProfileId(), SEARCH_ENGINE, profileVersion, foundLinks);
+                if (linksToCrawl.size() > 0) {
+                    crawlerLog.logFoundLinks(profileMessage.getProfileId(), SEARCH_ENGINE, profileVersion, foundLinks);
+                    SearchResultsMessage searchResultsMessage = new SearchResultsMessage(linksToCrawl);
+                    searchResultsMessage.setProfileId(profileMessage.getProfileId());
+                    searchResultsMessage.setSearchEngine(SEARCH_ENGINE);
+                    searchResultsMessage.setProfileVersion(profileVersion);
+                    passResultsToCrawler(searchResultsMessage);
+                }
             }
         } catch (IOException e) {
             log.error("Error during unpack ProfileMessage: {}", e);
@@ -112,10 +117,15 @@ public class FarooClient implements MessageListener {
         } catch (UnsupportedEncodingException e) {
             log.error("Unsupported Encoding!");
         }
-        return "http://www.faroo.com/api?q=" + encQuery + "&start=1&length=10&l=en&src=web&i=false&f=json&key=***REMOVED***";
+        return "http://www.faroo.com/api?q=" + encQuery + "&start=1&length=10&l=en&src=news&i=false&f=json&key=***REMOVED***";
     }
 
     public void passResultsToCrawler(SearchResultsMessage msg){
-        amqpTemplate.convertAndSend("crawler-query", msg);
+        try {
+            String json = jsonMapper.writeValueAsString(msg);
+            amqpTemplate.convertAndSend(AmqpConfig.crawlerExchange().getName(), "#", json);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
     }
 }

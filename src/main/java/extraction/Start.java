@@ -1,5 +1,6 @@
 package extraction;
 
+import config.DataSourceConfigurationStaging;
 import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -9,7 +10,7 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
  */
 public class Start {
     public static void main (String[] ars) throws Exception{
-        ApplicationContext ctx = new AnnotationConfigApplicationContext(MessageQueueConfiguration.class);
+        ApplicationContext ctx = new AnnotationConfigApplicationContext(DataSourceConfigurationStaging.class);
         System.out.println("Waiting five seconds...");
         Thread.sleep(5000);
         System.out.println("Sending message...");

@@ -1,0 +1,12 @@
+# Production doccache connection properties
+jdbc.doccache.url=jdbc:mysql://localhost/doccache?characterEncoding\=UTF-8&useUnicode\=true
+jdbc.doccache.username=user
+jdbc.doccache.password=password
+# Production dictionary connection properties
+jdbc.extraction.url=jdbc:mysql://localhost/extraction?characterEncoding\=UTF-8&useUnicode\=true
+jdbc.extraction.username=user
+jdbc.extraction.password=password
+# Production dictionary connection properties
+jdbc.dictionary.url=jdbc:mysql://localhost/dictionary?characterEncoding\=UTF-8&useUnicode\=true
+jdbc.dictionary.username=user
+jdbc.dictionary.password=password

@@ -12,6 +12,8 @@ public class Link {
     private String snippet;
     private int golemId;
 
+    public Link(){}
+
     public Link (String url, String title, String snippet, int golemId){
         this.urlHash    = DigestUtils.sha1Hex(url);
         this.url        = url;
@@ -46,5 +48,13 @@ public class Link {
 
     public void setSnippet(String snippet) {
         this.snippet = snippet;
+    }
+
+    public int getGolemId() {
+        return golemId;
+    }
+
+    public void setGolemId(int golemId) {
+        this.golemId = golemId;
     }
 }
