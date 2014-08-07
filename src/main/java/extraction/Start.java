@@ -1,7 +1,8 @@
 package extraction;
 
 import config.DataSourceConfigurationStaging;
-import org.springframework.amqp.core.AmqpTemplate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
@@ -9,13 +10,10 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
  *
  */
 public class Start {
+    private static final Logger log = LoggerFactory.getLogger(Start.class);
+
     public static void main (String[] ars) throws Exception{
         ApplicationContext ctx = new AnnotationConfigApplicationContext(DataSourceConfigurationStaging.class);
-        System.out.println("Waiting five seconds...");
-        Thread.sleep(5000);
-        System.out.println("Sending message...");
-        AmqpTemplate rabbitTemplate = ctx.getBean(AmqpTemplate.class);
-        rabbitTemplate.convertAndSend("search-extraction-requests", "faroo-query", "New Message!");
-        System.out.println("Message sent.");
+        log.info("All listners, exchanges and queues raised and ready.");
     }
 }

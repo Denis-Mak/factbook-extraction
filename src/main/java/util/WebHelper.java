@@ -8,7 +8,9 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.Authenticator;
 import java.net.HttpURLConnection;
+import java.net.PasswordAuthentication;
 import java.net.URL;
 
 /**
@@ -23,11 +25,15 @@ public class WebHelper {
         return getUrl(url, DEFAULT_USER_AGENT);
     }
 
-    public static String getUrl(String url, String userAgent){
+    public static String getUrl(String url, String userAgent) {
+        return getUrl(url, userAgent, null, null);
+    }
+
+    public static String getUrl(String url, String userAgent, String username, String password){
         String line;
         StringBuilder sb = new StringBuilder();
         BufferedReader in = null;
-        InputStream is = WebHelper.getInputStream(url, userAgent);
+        InputStream is = getInputStream(url, userAgent, username, password);
         try {
             in = new BufferedReader(new InputStreamReader(is, "UTF-8"));
             while ((line = in.readLine()) != null) {
@@ -48,13 +54,24 @@ public class WebHelper {
     }
 
     public static InputStream getInputStream(String url){
-        return WebHelper.getInputStream(url, DEFAULT_USER_AGENT);
+        return getInputStream(url, DEFAULT_USER_AGENT);
     }
 
-    public static InputStream getInputStream(String url, String userAgent){
+    public static InputStream getInputStream (String url, String userAgent){
+        return getInputStream(url, userAgent, null, null);
+    }
+
+    public static InputStream getInputStream(String url, String userAgent, String username, String password){
         InputStream is = null;
         try {
             URL myUrl = new URL(url);
+            if (username != null) {
+                Authenticator.setDefault(new Authenticator() {
+                    protected PasswordAuthentication getPasswordAuthentication() {
+                        return new PasswordAuthentication(username, password.toCharArray());
+                    }
+                });
+            }
             HttpURLConnection c = (HttpURLConnection)myUrl.openConnection();
             if (userAgent != null) {
                 System.setProperty("http.agent", "");

@@ -12,7 +12,8 @@ public class MessageFixtures {
     public static String profileMessageJson = "{\"initialQuery\":\"\","+
             "\"queryLines\":[" +
             "[[{\"word\":\"ios\",\"golemId\":2},{\"word\":\"iphone\",\"golemId\":2}]]," +
-            "[[{\"word\":\"power\",\"golemId\":2},{\"word\":\"consumption\",\"golemId\":2}]]]}";
+            "[[{\"word\":\"power\",\"golemId\":2},{\"word\":\"consumption\",\"golemId\":2}]]," +
+            "[[{\"word\":\"телефон\",\"golemId\":1},{\"word\":\"эпл\",\"golemId\":1}]]]}";
 
     public static ProfileMessage profileMessage;
     static {
