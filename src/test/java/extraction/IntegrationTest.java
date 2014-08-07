@@ -67,12 +67,10 @@ public class IntegrationTest implements Runnable {
     public void run() {
         amqpTemplate.convertAndSend("faroo-query", MessageFixtures.profileMessageJson);
 
-        while (!cancelled) {
-            try {
-                Thread.sleep(1);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+        try {
+            Thread.sleep(60000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
 }

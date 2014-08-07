@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import config.AmqpConfig;
 import org.apache.tika.Tika;
-import org.apache.tika.io.TikaInputStream;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.parser.html.BoilerpipeContentHandler;
@@ -18,10 +17,10 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import util.WebHelper;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
 
 /**
  *
@@ -75,11 +74,11 @@ public class Crawler implements MessageListener{
     public String downloadArticle(String url){
         String content = "";
         try {
-            URL myUrl = new URL(url);
             Metadata metadata = new Metadata();
-            InputStream is = TikaInputStream.get(myUrl, metadata);
+            InputStream is = WebHelper.getInputStream(url);
             String mimeType = new Tika().detect(is);
             switch (mimeType) {
+                case "text/html":
                 case "application/xhtml+xml": {
                     BodyContentHandler ch = new BodyContentHandler();
                     BoilerpipeContentHandler bch = new BoilerpipeContentHandler(ch);

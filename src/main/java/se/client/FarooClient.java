@@ -34,6 +34,8 @@ public class FarooClient implements MessageListener {
     private static final Logger log = LoggerFactory.getLogger(FarooClient.class);
     private static ObjectMapper jsonMapper = new ObjectMapper();
 
+    private static long lastAccessed = 0;
+
     public static class Query{
         private int golemId;
         private String query;
@@ -94,7 +96,8 @@ public class FarooClient implements MessageListener {
     List<Link> getLinks(Query query){
         List<Link> links = new ArrayList<>(100);
         try {
-            JsonNode root = jsonMapper.readTree(WebHelper.getUrl(buildUrl(query.query), "factbook-robot"));
+            pauseBetweenRequests();
+            JsonNode root = jsonMapper.readTree(WebHelper.getUrl(buildUrl(query.query)));
             JsonNode results = root.path("results");
             Iterator<JsonNode> itr = results.elements();
             while (itr.hasNext()) {
@@ -127,5 +130,21 @@ public class FarooClient implements MessageListener {
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
+    }
+
+    private void pauseBetweenRequests() {
+        long timeToWait = 0;
+        if(lastAccessed > 0)
+            timeToWait = 1000 - (System.currentTimeMillis() - lastAccessed);
+
+        if(timeToWait > 0) {
+            try {
+                Thread.sleep(timeToWait);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
+        lastAccessed = System.currentTimeMillis();
     }
 }
