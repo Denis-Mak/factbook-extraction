@@ -1,4 +1,4 @@
-use extraction;
+use it.factbook.extraction;
 
 drop table if exists CrawlerLog;
 
