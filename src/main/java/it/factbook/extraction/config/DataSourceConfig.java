@@ -21,13 +21,13 @@ public class DataSourceConfig {
     @Value("${jdbc.doccache.password}")
     private String jdbcDoccachePassword;
 
-    @Value("${jdbc.it.factbook.extraction.url}")
+    @Value("${jdbc.extraction.url}")
     private String jdbcExtractionUrl;
 
-    @Value("${jdbc.it.factbook.extraction.username}")
+    @Value("${jdbc.extraction.username}")
     private String jdbcExtractionUsername;
 
-    @Value("${jdbc.it.factbook.extraction.password}")
+    @Value("${jdbc.extraction.password}")
     private String jdbcExtractionPassword;
 
     @Value("${jdbc.dictionary.url}")

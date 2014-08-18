@@ -41,14 +41,15 @@ public class FarooClient extends AbstractSearchEngineClient implements MessageLi
         long profileVersion = System.currentTimeMillis();
         List<Query> queries = getQueries(profileMessage);
         for(Query query: queries){
+            long requestLogId = crawlerLog.logSearchRequest(profileMessage.getProfileId(), SEARCH_ENGINE, profileVersion, query);
             List<Link> foundLinks = getLinks(query);
             List<Link> linksToCrawl = crawlerLog.getLinksToCrawl(foundLinks);
             if (linksToCrawl.size() > 0) {
-                crawlerLog.logFoundLinks(profileMessage.getProfileId(), SEARCH_ENGINE, profileVersion, foundLinks);
+                crawlerLog.logFoundLinks(profileMessage.getProfileId(), SEARCH_ENGINE, requestLogId, foundLinks);
                 SearchResultsMessage searchResultsMessage = new SearchResultsMessage(linksToCrawl);
                 searchResultsMessage.setProfileId(profileMessage.getProfileId());
                 searchResultsMessage.setSearchEngine(SEARCH_ENGINE);
-                searchResultsMessage.setProfileVersion(profileVersion);
+                searchResultsMessage.setRequestLogId(requestLogId);
                 passResultsToCrawler(searchResultsMessage);
             }
         }
@@ -68,6 +69,7 @@ public class FarooClient extends AbstractSearchEngineClient implements MessageLi
                 }
             }
         }
+
         return queries;
     }
 

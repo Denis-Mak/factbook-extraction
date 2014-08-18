@@ -1,6 +1,6 @@
 package it.factbook.extraction;
 
-import it.factbook.extraction.config.DataSourceConfigurationStaging;
+import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.daemon.Daemon;
 import org.apache.commons.daemon.DaemonContext;
 import org.apache.commons.daemon.DaemonInitException;
@@ -79,9 +79,12 @@ public class Start implements Daemon{
     @Override
     public void start() throws Exception {
         Start.cancelled = false;
-        ctx = new AnnotationConfigApplicationContext(DataSourceConfigurationStaging.class);
+        PropertiesConfiguration buildConfig = new PropertiesConfiguration("build.properties");
+        buildConfig.load();
+        ctx = new AnnotationConfigApplicationContext(Class.forName(buildConfig.getString("build.profile")));
         init();  // init here because windows service starts calling one method
         myThread.start();
+        log.info("Loaded config: {}", buildConfig.getString("build.profile"));
         log.info("All listners, exchanges and queues raised and ready.");
     }
 
@@ -89,6 +92,7 @@ public class Start implements Daemon{
     // Unix daemon stop
     @Override
     public void stop() throws Exception {
+        Start.cancelled = true;
         ctx.close();
         log.info("factbook-it.factbook.extraction stopped");
         myThread.interrupt();

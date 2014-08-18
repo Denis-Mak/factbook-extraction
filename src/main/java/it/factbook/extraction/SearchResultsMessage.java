@@ -10,7 +10,7 @@ import java.util.List;
 public class SearchResultsMessage {
     private long profileId;
     private SearchEngine searchEngine;
-    private long profileVersion;
+    private long requestLogId;
     private List<Link> links;
 
     public  SearchResultsMessage(){}
@@ -35,12 +35,12 @@ public class SearchResultsMessage {
         this.searchEngine = searchEngine;
     }
 
-    public long getProfileVersion() {
-        return profileVersion;
+    public long getRequestLogId() {
+        return requestLogId;
     }
 
-    public void setProfileVersion(long profileVersion) {
-        this.profileVersion = profileVersion;
+    public void setRequestLogId(long profileVersion) {
+        this.requestLogId = profileVersion;
     }
 
     public List<Link> getLinks() {

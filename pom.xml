@@ -8,10 +8,40 @@
     <artifactId>factbook-it.factbook.extraction</artifactId>
     <version>1.0-SNAPSHOT</version>
 
-    <properties>
-        <!-- log parameters -->
-        <spring.log.level>DEBUG</spring.log.level>
+    <profiles>
+        <profile>
+            <id>production</id>
+            <properties>
+                <pom.build.config>it.factbook.extraction.config.DataSourceConfigurationProduction</pom.build.config>
+                <log.level>WARN</log.level>
+                <spring.log.level>INFO</spring.log.level>
+                <service.log.level>DEBUG</service.log.level>
+            </properties>
+        </profile>
+        <profile>
+            <id>staging</id>
+            <properties>
+                <pom.build.config>it.factbook.extraction.config.DataSourceConfigurationStaging</pom.build.config>
+                <log.level>DEBUG</log.level>
+                <spring.log.level>INFO</spring.log.level>
+                <service.log.level>DEBUG</service.log.level>
+            </properties>
+        </profile>
+        <profile>
+            <id>test</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <pom.build.config>it.factbook.extraction.config.DataSourceConfigurationTest</pom.build.config>
+                <log.level>DEBUG</log.level>
+                <spring.log.level>INFO</spring.log.level>
+                <service.log.level>DEBUG</service.log.level>
+            </properties>
+        </profile>
+    </profiles>
 
+    <properties>
         <junit.version>4.11</junit.version>
         <mockito.version>1.9.5</mockito.version>
         <slf4j.version>1.7.5</slf4j.version>

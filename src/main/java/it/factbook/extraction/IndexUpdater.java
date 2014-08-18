@@ -33,9 +33,11 @@ public class IndexUpdater implements MessageListener{
         try {
             jsonMapper.registerModule(new JodaModule());
             FactsMessage msg = jsonMapper.readValue(message.getBody(), FactsMessage.class);
-            log.debug("Received message. Facts count: {}", msg.getFacts().size());
-            int golemId = msg.getFacts().get(0).getGolemId();
-            sphinxIndexUpdater.updateIndex(msg.getFacts(), config.rtIndexes.get(golemId).get(0));
+            if (msg.getFacts().size() > 0) {
+                log.debug("Received message. Facts count: {}", msg.getFacts().size());
+                int golemId = msg.getFacts().get(0).getGolemId();
+                sphinxIndexUpdater.updateIndex(msg.getFacts(), config.rtIndexes.get(golemId).get(0));
+            }
         } catch (IOException e) {
             log.error("Error during unpack DocumentMessage: {}", e);
         }

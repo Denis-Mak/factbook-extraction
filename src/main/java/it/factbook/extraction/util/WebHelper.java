@@ -8,10 +8,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.Authenticator;
-import java.net.HttpURLConnection;
-import java.net.PasswordAuthentication;
-import java.net.URL;
+import java.net.*;
 
 /**
  *
@@ -21,15 +18,16 @@ public class WebHelper {
 
     private static final String DEFAULT_USER_AGENT = "factbook-robot";
 
-    public static String getUrl(String url){
+    public static String getUrl(String url) throws IOException{
         return getUrl(url, DEFAULT_USER_AGENT);
     }
 
-    public static String getUrl(String url, String userAgent) {
+    public static String getUrl(String url, String userAgent) throws IOException {
         return getUrl(url, userAgent, null, null);
     }
 
-    public static String getUrl(String url, String userAgent, String username, String password){
+    public static String getUrl(String url, String userAgent, String username, String password)
+            throws IOException{
         String line;
         StringBuilder sb = new StringBuilder();
         BufferedReader in = null;
@@ -53,34 +51,33 @@ public class WebHelper {
         return sb.toString();
     }
 
-    public static InputStream getInputStream(String url){
+    public static InputStream getInputStream(String url) throws IOException{
         return getInputStream(url, DEFAULT_USER_AGENT);
     }
 
-    public static InputStream getInputStream (String url, String userAgent){
+    public static InputStream getInputStream (String url, String userAgent) throws IOException{
         return getInputStream(url, userAgent, null, null);
     }
 
-    public static InputStream getInputStream(String url, String userAgent, String username, String password){
+    public static InputStream getInputStream(String url, String userAgent, String username, String password)
+            throws IOException{
         InputStream is = null;
-        try {
-            URL myUrl = new URL(url);
-            if (username != null) {
-                Authenticator.setDefault(new Authenticator() {
-                    protected PasswordAuthentication getPasswordAuthentication() {
-                        return new PasswordAuthentication(username, password.toCharArray());
-                    }
-                });
-            }
-            HttpURLConnection c = (HttpURLConnection)myUrl.openConnection();
-            if (userAgent != null) {
-                System.setProperty("http.agent", "");
-                c.setRequestProperty("User-Agent", userAgent);
-            }
-            is = c.getInputStream();
-        } catch (IOException e) {
-            e.printStackTrace();
+        URL myUrl = new URL(url);
+        if (username != null) {
+            Authenticator.setDefault(new Authenticator() {
+                protected PasswordAuthentication getPasswordAuthentication() {
+                    return new PasswordAuthentication(username, password.toCharArray());
+                }
+            });
         }
+        HttpURLConnection c = (HttpURLConnection)myUrl.openConnection();
+        if (userAgent != null) {
+            System.setProperty("http.agent", "");
+            c.setRequestProperty("User-Agent", userAgent);
+        }
+        c.setRequestMethod("GET");
+        is = c.getInputStream();
+
         return TikaInputStream.get(is);
     }
 }

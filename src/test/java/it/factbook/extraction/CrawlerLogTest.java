@@ -1,5 +1,7 @@
 package it.factbook.extraction;
 
+import it.factbook.extraction.client.Query;
+import it.factbook.extraction.client.SearchEngine;
 import it.factbook.extraction.config.DataSourceConfigurationTest;
 import org.joda.time.DateTime;
 import org.junit.After;
@@ -11,7 +13,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.support.AnnotationConfigContextLoader;
-import it.factbook.extraction.client.SearchEngine;
 
 import javax.sql.DataSource;
 import java.sql.Types;
@@ -61,7 +62,7 @@ public class CrawlerLogTest {
     @Test
     public void testLogFoundLinks() throws Exception {
         crawlerLog.logFoundLinks(PROFILE_ID, SE, PROFILE_VERSION, linksToLog);
-        List<Link> linksWritten = jdbcTemplate.query("SELECT profileId, searchEngineId, profileVersion, golemId, url " +
+        List<Link> linksWritten = jdbcTemplate.query("SELECT profileId, searchEngineId, requestLogId, golemId, url " +
                 "FROM CrawlerLog", (row, rowNm) -> new Link(row.getString("url"), "", "", row.getInt("golemId")));
         assertEquals(3, linksWritten.size());
     }
@@ -73,10 +74,10 @@ public class CrawlerLogTest {
             int downloadTimeMsec;
         }
         crawlerLog.logFoundLinks(PROFILE_ID, SE, PROFILE_VERSION, linksToLog);
-        crawlerLog.logDownloadedArticles(PROFILE_ID, SE, PROFILE_VERSION, linksToLog.get(0),
+        crawlerLog.logDownloadedArticles(PROFILE_ID, SE, PROFILE_VERSION, linksToLog.get(0).getUrl(),
                 "Apple spent a significant amount of its WWDC 2014 keynote focusing on iOS 8, which takes the flat iOS 7 design and only rounds it out with new features.\n" +
                         "That means instead of a dramatic redesign, you can expect this year's mobile operating system update to tie everything together with the overarching theme of \"convergence.\"",
-                new DateTime().minusMillis(2000).getMillis()); // imitate download started 2 sec ago
+                new DateTime().minusMillis(2000).getMillis(), ""); // imitate download started 2 sec ago
         List<Row> linksWritten = jdbcTemplate.query("SELECT downloadSizeByte, downloadTimeMsec " +
                 "FROM CrawlerLog WHERE urlHash = ?", new Object[]{linksToLog.get(0).getUrlHash()}, new int[]{Types.CHAR},
                 (row, rowNm) -> {
@@ -103,5 +104,14 @@ public class CrawlerLogTest {
                     assertEquals(0, link.downloadTimeMsec);
                 });
 
+    }
+
+    @Test
+    public void testLogRequest(){
+        jdbcTemplate.execute("TRUNCATE TABLE RequestLog");
+        long requestId = crawlerLog.logSearchRequest(PROFILE_ID, SE, PROFILE_VERSION, new Query(2,"query"));
+        long rowCount = jdbcTemplate.queryForObject("SELECT COUNT(1) FROM RequestLog", (row, rowNm) -> row.getLong(1));
+        assertEquals(1, rowCount);
+        assertTrue(requestId > 0);
     }
 }

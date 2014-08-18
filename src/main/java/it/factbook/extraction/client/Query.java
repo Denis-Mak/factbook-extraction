@@ -4,8 +4,8 @@ package it.factbook.extraction.client;
  *
  */
 public class Query {
-    int golemId;
-    String query;
+    public int golemId;
+    public String query;
 
     public Query(int golemId, String query){
         this.golemId    = golemId;

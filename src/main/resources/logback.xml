@@ -9,7 +9,7 @@
 
     <!-- don't change levels here, use profiles instead -->
     <logger name="org.springframework" level="${spring.log.level}" />
-    <logger name="${package}" level="${service.log.level}" />
+    <logger name="${groupId}" level="${service.log.level}" />
 
     <root>
         <level value="${log.level}"/>

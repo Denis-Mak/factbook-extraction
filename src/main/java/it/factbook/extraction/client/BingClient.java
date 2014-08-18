@@ -1,20 +1,23 @@
 package it.factbook.extraction.client;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import it.factbook.dictionary.WordForm;
 import it.factbook.extraction.Link;
 import it.factbook.extraction.ProfileMessage;
 import it.factbook.extraction.SearchResultsMessage;
-import it.factbook.dictionary.WordForm;
+import it.factbook.extraction.util.WebHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
-import it.factbook.extraction.util.WebHelper;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  *
@@ -35,49 +38,61 @@ public class BingClient extends AbstractSearchEngineClient implements MessageLis
         long profileVersion = System.currentTimeMillis();
         List<Query> queries = getQueries(profileMessage);
         for(Query query: queries){
+            long requestLogId = crawlerLog.logSearchRequest(profileMessage.getProfileId(), SEARCH_ENGINE, profileVersion, query);
             List<Link> foundLinks = getLinks(query);
             List<Link> linksToCrawl = crawlerLog.getLinksToCrawl(foundLinks);
             if (linksToCrawl.size() > 0) {
-                crawlerLog.logFoundLinks(profileMessage.getProfileId(), SEARCH_ENGINE, profileVersion, foundLinks);
+                crawlerLog.logFoundLinks(profileMessage.getProfileId(), SEARCH_ENGINE, requestLogId, foundLinks);
                 SearchResultsMessage searchResultsMessage = new SearchResultsMessage(linksToCrawl);
                 searchResultsMessage.setProfileId(profileMessage.getProfileId());
                 searchResultsMessage.setSearchEngine(SEARCH_ENGINE);
-                searchResultsMessage.setProfileVersion(profileVersion);
+                searchResultsMessage.setRequestLogId(requestLogId);
                 passResultsToCrawler(searchResultsMessage);
             }
         }
     }
 
     List<Query> getQueries(ProfileMessage profileMessage) {
-        Map<Integer,String> queriesMap = new HashMap<>(); //query for each golem executes separately to distinct results
+        int WORDGRAMS_IN_ONE_QUERY = 5;
+        List<Query> wordgramQueries = new ArrayList<>();
         for (List<List<WordForm>> line: profileMessage.getQueryLines()){
-            int golemId = line.get(0).get(0).getGolemId();
-            String query = queriesMap.get(golemId);
-            if (query == null) query = "";
             for(List<WordForm> wordgram: line){
-                if (SEARCH_ENGINE.containsGolemId(golemId)) {
-                    if (line.size() > 1) query += "(";
-                    query += "(";
-                    for (WordForm word : wordgram) {
-                        query += word.getWord() + " ";
-                    }
-                    query = query.substring(0, query.length()-1);
-                    query += ") | ";
+                String query = "";
+                query += "(";
+                for (WordForm word : wordgram) {
+                    query += word.getWord() + " ";
+                }
+                query = query.substring(0, query.length()-1) + ")";
+                wordgramQueries.add(new Query(wordgram.get(0).getGolemId(), query));
+            }
+        }
+        Collections.sort(wordgramQueries, (q1, q2) -> q1.golemId - q2.golemId);
+        List<Query> queries = new ArrayList<>();
+        String query = "";
+        int wordgramCounter = 0;
+        int golemId = 0;
+        boolean hasInitialQuery = profileMessage.getInitialQuery() != null && profileMessage.getInitialQuery().length() > 0;
+        for (Query each:wordgramQueries){
+            if (wordgramCounter > 0 && (each.golemId != golemId || wordgramCounter >= WORDGRAMS_IN_ONE_QUERY)){
+                wordgramCounter = 0;
+                query = query.substring(0, query.length()-3);
+                if (hasInitialQuery) query += ")";
+                queries.add(new Query(golemId, query));
+            }
+            if (wordgramCounter == 0){
+                golemId = each.golemId;
+                if (hasInitialQuery){
+                    query = profileMessage.getInitialQuery() + " (";
+                } else {
+                    query = "";
                 }
             }
-            query = query.substring(0, query.length()-3); //cut last column
-            query += " | ";
-            queriesMap.put(golemId, query);
+            wordgramCounter++;
+            query += each.query + " | ";
         }
-
-        List<Query> queries = new ArrayList<>(queriesMap.size());
-        for (Map.Entry<Integer,String> entry:queriesMap.entrySet()){
-            String query = entry.getValue().substring(0, entry.getValue().length() - 3);
-            if (profileMessage.getInitialQuery() != null && profileMessage.getInitialQuery().length() >0){
-                query = profileMessage.getInitialQuery() + "(" + query + ")";
-            }
-            queries.add(new Query(entry.getKey(), query));
-        }
+        query = query.substring(0, query.length()-3);
+        if (hasInitialQuery) query += ")";
+        queries.add(new Query(golemId, query));
 
         return queries;
     }
@@ -96,7 +111,8 @@ public class BingClient extends AbstractSearchEngineClient implements MessageLis
                         query.golemId));
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Error on request: {} ", query.query);
+            log.error("Error info:", e);
         }
         return links;
     }

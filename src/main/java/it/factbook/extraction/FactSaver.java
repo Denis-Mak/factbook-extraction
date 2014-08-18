@@ -43,37 +43,39 @@ public class FactSaver implements MessageListener{
 
     @Override
     public void onMessage(Message message) {
+        DocumentMessage msg = new DocumentMessage();
         try {
-            DocumentMessage msg = jsonMapper.readValue(message.getBody(), DocumentMessage.class);
-            log.debug("Received message. Document URL: {} \n Document title: {}",
-                    msg.getUrl(), msg.getTitle());
-            Fact documentHeader = new Fact.Builder()
-                    .title(msg.getTitle())
-                    .titleSense(documentToFactSplitter.convertToSense(documentToFactSplitter.splitWords(msg.getTitle()), msg.getGolemId()))
-                    .docUrl(msg.getUrl())
-                    .docLang(langDetector.detectLanguage(msg.getContent()))
-                    .golemId(msg.getGolemId()).build();
-            long docId = factAdapter.saveDocumentHeader(documentHeader);
-            factAdapter.saveDocumentContent(docId, msg.getContent());
-            List<Fact> facts = documentToFactSplitter.splitDocument(msg.getContent(), docId, msg.getGolemId());
-            factAdapter.appendFacts(facts);
-            List<Fact> factsWithId = factAdapter.getByDocId(docId);
-            List<Fact> factsWithDocHeader = factsWithId.stream()
-                    .map(f -> new Fact.Builder(documentHeader)
-                                .id(f.getId())
-                                .content(f.getContent())
-                                .contentSense(f.getContentSense())
-                                .factLang(f.getFactLang())
-                                .docId(f.getDocId())
-                                .docPosition(f.getDocPosition())
-                                .build())
-                    .collect(Collectors.toList());
-            FactsMessage factsMessage = new FactsMessage();
-            factsMessage.setFacts(factsWithDocHeader);
-            passFactsToIndexUpdater(factsMessage);
+            msg = jsonMapper.readValue(message.getBody(), DocumentMessage.class);
+            msg.setContent(msg.getContent().replaceAll("\\p{C}", ""));   // remove all special chars
         } catch (IOException e) {
             log.error("Error during unpack DocumentMessage: {}", e);
         }
+
+        log.debug("Received message. Document URL: {} \n Document title: {}", msg.getUrl(), msg.getTitle());
+        Fact documentHeader = new Fact.Builder()
+                .title(msg.getTitle())
+                .titleSense(documentToFactSplitter.convertToSense(documentToFactSplitter.splitWords(msg.getTitle()), msg.getGolemId()))
+                .docUrl(msg.getUrl())
+                .docLang(langDetector.detectLanguage(msg.getContent()))
+                .golemId(msg.getGolemId()).build();
+        long docId = factAdapter.saveDocumentHeader(documentHeader);
+        factAdapter.saveDocumentContent(docId, msg.getContent());
+        List<Fact> facts = documentToFactSplitter.splitDocument(msg.getContent(), docId, msg.getGolemId());
+        factAdapter.appendFacts(facts);
+        List<Fact> factsWithId = factAdapter.getByDocId(docId);
+        List<Fact> factsWithDocHeader = factsWithId.stream()
+                .map(f -> new Fact.Builder(documentHeader)
+                        .id(f.getId())
+                        .content(f.getContent())
+                        .contentSense(f.getContentSense())
+                        .factLang(f.getFactLang())
+                        .docId(f.getDocId())
+                        .docPosition(f.getDocPosition())
+                        .build())
+                .collect(Collectors.toList());
+        FactsMessage factsMessage = new FactsMessage();
+        factsMessage.setFacts(factsWithDocHeader);
+        passFactsToIndexUpdater(factsMessage);
     }
 
     private void passFactsToIndexUpdater(FactsMessage factsMessage) {
