@@ -1,5 +1,6 @@
 package it.factbook.extraction;
 
+import it.factbook.dictionary.Golem;
 import it.factbook.extraction.client.Query;
 import it.factbook.extraction.client.SearchEngine;
 import it.factbook.extraction.config.DataSourceConfigurationTest;
@@ -30,9 +31,9 @@ public class CrawlerLogTest {
     private static final long PROFILE_VERSION = 111;
     private static List<Link> linksToLog = new ArrayList<>(3);
     static {
-        linksToLog.add(new Link("http://www.era.com/articles/1", "Just a few words", " We are talking about iOS", 2));
-        linksToLog.add(new Link("http://www.xixi.com/new/vertu-on-sale", "Vertu won't be sold", " That's the news", 2));
-        linksToLog.add(new Link("http://www.hashara.com/about/", "Keep track our twitter", " Android and iOS news", 2));
+        linksToLog.add(new Link("http://www.era.com/articles/1", "Just a few words", " We are talking about iOS", Golem.WIKI_EN));
+        linksToLog.add(new Link("http://www.xixi.com/new/vertu-on-sale", "Vertu won't be sold", " That's the news", Golem.WIKI_EN));
+        linksToLog.add(new Link("http://www.hashara.com/about/", "Keep track our twitter", " Android and iOS news", Golem.WIKI_EN));
     }
 
     @Autowired
@@ -63,7 +64,7 @@ public class CrawlerLogTest {
     public void testLogFoundLinks() throws Exception {
         crawlerLog.logFoundLinks(PROFILE_ID, SE, PROFILE_VERSION, linksToLog);
         List<Link> linksWritten = jdbcTemplate.query("SELECT profileId, searchEngineId, requestLogId, golemId, url " +
-                "FROM CrawlerLog", (row, rowNm) -> new Link(row.getString("url"), "", "", row.getInt("golemId")));
+                "FROM CrawlerLog", (row, rowNm) -> new Link(row.getString("url"), "", "", Golem.valueOf(row.getInt("golemId"))));
         assertEquals(3, linksWritten.size());
     }
 
@@ -109,7 +110,7 @@ public class CrawlerLogTest {
     @Test
     public void testLogRequest(){
         jdbcTemplate.execute("TRUNCATE TABLE RequestLog");
-        long requestId = crawlerLog.logSearchRequest(PROFILE_ID, SE, PROFILE_VERSION, new Query(2,"query"));
+        long requestId = crawlerLog.logSearchRequest(PROFILE_ID, SE, PROFILE_VERSION, new Query(Golem.WIKI_EN,"query"));
         long rowCount = jdbcTemplate.queryForObject("SELECT COUNT(1) FROM RequestLog", (row, rowNm) -> row.getLong(1));
         assertEquals(1, rowCount);
         assertTrue(requestId > 0);

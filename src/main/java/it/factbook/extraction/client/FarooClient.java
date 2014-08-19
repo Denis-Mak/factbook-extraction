@@ -1,6 +1,7 @@
 package it.factbook.extraction.client;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import it.factbook.dictionary.Golem;
 import it.factbook.extraction.Link;
 import it.factbook.extraction.ProfileMessage;
 import it.factbook.extraction.SearchResultsMessage;
@@ -59,13 +60,13 @@ public class FarooClient extends AbstractSearchEngineClient implements MessageLi
         List<Query> queries = new ArrayList<>(50);
         for (List<List<WordForm>> line: msg.getQueryLines()){
             for(List<WordForm> wordgram: line){
-                int golemId = wordgram.get(0).getGolemId();
-                if (SEARCH_ENGINE.containsGolemId(golemId)) {
+                Golem golem = wordgram.get(0).getGolem();
+                if (SEARCH_ENGINE.containsGolem(golem)) {
                     String query = msg.getInitialQuery() != null ? msg.getInitialQuery() : "";
                     for (WordForm word : wordgram) {
                         query += " " + word.getWord();
                     }
-                    queries.add(new Query(golemId, query));
+                    queries.add(new Query(golem, query));
                 }
             }
         }
@@ -85,7 +86,7 @@ public class FarooClient extends AbstractSearchEngineClient implements MessageLi
                 links.add(new Link( res.path("url").textValue(),
                                     res.path("title").textValue(),
                                     res.path("kwic").textValue(),
-                                    query.golemId));
+                                    query.golem));
             }
         } catch (IOException e) {
             e.printStackTrace();

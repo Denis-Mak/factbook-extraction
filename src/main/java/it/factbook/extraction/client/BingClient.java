@@ -1,6 +1,7 @@
 package it.factbook.extraction.client;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import it.factbook.dictionary.Golem;
 import it.factbook.dictionary.WordForm;
 import it.factbook.extraction.Link;
 import it.factbook.extraction.ProfileMessage;
@@ -63,24 +64,24 @@ public class BingClient extends AbstractSearchEngineClient implements MessageLis
                     query += word.getWord() + " ";
                 }
                 query = query.substring(0, query.length()-1) + ")";
-                wordgramQueries.add(new Query(wordgram.get(0).getGolemId(), query));
+                wordgramQueries.add(new Query(wordgram.get(0).getGolem(), query));
             }
         }
-        Collections.sort(wordgramQueries, (q1, q2) -> q1.golemId - q2.golemId);
+        Collections.sort(wordgramQueries, (q1, q2) -> q1.golem.getId() - q2.golem.getId());
         List<Query> queries = new ArrayList<>();
         String query = "";
         int wordgramCounter = 0;
-        int golemId = 0;
+        Golem golem = Golem.UNKNOWN;
         boolean hasInitialQuery = profileMessage.getInitialQuery() != null && profileMessage.getInitialQuery().length() > 0;
         for (Query each:wordgramQueries){
-            if (wordgramCounter > 0 && (each.golemId != golemId || wordgramCounter >= WORDGRAMS_IN_ONE_QUERY)){
+            if (wordgramCounter > 0 && (each.golem != golem || wordgramCounter >= WORDGRAMS_IN_ONE_QUERY)){
                 wordgramCounter = 0;
                 query = query.substring(0, query.length()-3);
                 if (hasInitialQuery) query += ")";
-                queries.add(new Query(golemId, query));
+                queries.add(new Query(golem, query));
             }
             if (wordgramCounter == 0){
-                golemId = each.golemId;
+                golem = each.golem;
                 if (hasInitialQuery){
                     query = profileMessage.getInitialQuery() + " (";
                 } else {
@@ -92,7 +93,7 @@ public class BingClient extends AbstractSearchEngineClient implements MessageLis
         }
         query = query.substring(0, query.length()-3);
         if (hasInitialQuery) query += ")";
-        queries.add(new Query(golemId, query));
+        queries.add(new Query(golem, query));
 
         return queries;
     }
@@ -108,7 +109,7 @@ public class BingClient extends AbstractSearchEngineClient implements MessageLis
                 links.add(new Link( res.path("Url").textValue(),
                         res.path("Title").textValue(),
                         res.path("Description").textValue(),
-                        query.golemId));
+                        query.golem));
             }
         } catch (IOException e) {
             log.error("Error on request: {} ", query.query);

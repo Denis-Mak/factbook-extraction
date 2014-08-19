@@ -1,5 +1,6 @@
 package it.factbook.extraction.client;
 
+import it.factbook.dictionary.Golem;
 import it.factbook.extraction.Link;
 import it.factbook.extraction.MessageFixtures;
 import org.junit.Ignore;
@@ -24,7 +25,7 @@ public class BingClientTest {
     @Test
     @Ignore
     public void testGetLinks() throws Exception {
-        List<Link> links = bc.getLinks(new Query(2, "iphone ios"));
+        List<Link> links = bc.getLinks(new Query(Golem.WIKI_EN, "iphone ios"));
         assertEquals(50, links.size());
     }
 }

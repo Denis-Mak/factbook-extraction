@@ -1,5 +1,6 @@
 package it.factbook.extraction;
 
+import it.factbook.dictionary.Golem;
 import org.apache.commons.codec.digest.DigestUtils;
 
 /**
@@ -10,16 +11,16 @@ public class Link {
     private String urlHash;
     private String title;
     private String snippet;
-    private int golemId;
+    private Golem golem;
 
     public Link(){}
 
-    public Link (String url, String title, String snippet, int golemId){
+    public Link (String url, String title, String snippet, Golem golem){
         this.urlHash    = DigestUtils.sha1Hex(url);
         this.url        = url;
         this.title      = title;
         this.snippet    = snippet;
-        this.golemId    = golemId;
+        this.golem      = golem;
     }
 
     public String getUrlHash() {
@@ -50,11 +51,11 @@ public class Link {
         this.snippet = snippet;
     }
 
-    public int getGolemId() {
-        return golemId;
+    public Golem getGolem() {
+        return golem;
     }
 
-    public void setGolemId(int golemId) {
-        this.golemId = golemId;
+    public void setGolem(Golem golem) {
+        this.golem = golem;
     }
 }

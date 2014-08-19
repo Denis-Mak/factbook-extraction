@@ -7,7 +7,7 @@ import it.factbook.extraction.config.AmqpConfig;
 import it.factbook.search.DocumentToFactSplitter;
 import it.factbook.search.Fact;
 import it.factbook.search.repository.FactAdapter;
-import it.factbook.util.LangDetector;
+import it.factbook.dictionary.LangDetector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.AmqpTemplate;
@@ -54,13 +54,13 @@ public class FactSaver implements MessageListener{
         log.debug("Received message. Document URL: {} \n Document title: {}", msg.getUrl(), msg.getTitle());
         Fact documentHeader = new Fact.Builder()
                 .title(msg.getTitle())
-                .titleSense(documentToFactSplitter.convertToSense(documentToFactSplitter.splitWords(msg.getTitle()), msg.getGolemId()))
+                .titleSense(documentToFactSplitter.convertToSense(documentToFactSplitter.splitWords(msg.getTitle()), msg.getGolem()))
                 .docUrl(msg.getUrl())
                 .docLang(langDetector.detectLanguage(msg.getContent()))
-                .golemId(msg.getGolemId()).build();
+                .golem(msg.getGolem()).build();
         long docId = factAdapter.saveDocumentHeader(documentHeader);
         factAdapter.saveDocumentContent(docId, msg.getContent());
-        List<Fact> facts = documentToFactSplitter.splitDocument(msg.getContent(), docId, msg.getGolemId());
+        List<Fact> facts = documentToFactSplitter.splitDocument(msg.getContent(), docId, msg.getGolem());
         factAdapter.appendFacts(facts);
         List<Fact> factsWithId = factAdapter.getByDocId(docId);
         List<Fact> factsWithDocHeader = factsWithId.stream()

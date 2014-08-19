@@ -1,30 +1,32 @@
 package it.factbook.extraction.client;
 
+import it.factbook.dictionary.Golem;
+
 /**
  *
  */
 public enum SearchEngine {
-    FAROO(1, new int[]{2}),
-    YANDEX(2, new int[]{1}),
-    GOOGLE(3, new int[]{1,2}),
-    YAHOO(4, new int[]{1,2}),
-    BING(5, new int[]{1,2});
+    FAROO(1, Golem.WIKI_EN),
+    YANDEX(2, Golem.WIKI_RU),
+    GOOGLE(3, Golem.WIKI_RU, Golem.WIKI_EN),
+    YAHOO(4, Golem.WIKI_RU, Golem.WIKI_EN),
+    BING(5, Golem.WIKI_RU, Golem.WIKI_EN);
 
     private final int id;
-    private final int[] golemIds;
+    private final Golem[] golems;
 
-    SearchEngine(int id, int[] golemId){
+    SearchEngine(int id, Golem... golems){
         this.id = id;
-        this.golemIds = golemId;
+        this.golems = golems;
     }
 
     public int getId() {return id;}
 
-    public int[] getGolemIds() {return golemIds;}
+    public Golem[] getGolemIds() {return golems;}
 
-    public boolean containsGolemId (int golemId){
-        for (int elm: golemIds){
-            if (elm == golemId) {return true;}
+    public boolean containsGolem (Golem golem){
+        for (Golem elm: golems){
+            if (elm == golem) {return true;}
         }
         return false;
     }

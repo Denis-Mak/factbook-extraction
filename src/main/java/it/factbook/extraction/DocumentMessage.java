@@ -1,5 +1,7 @@
 package it.factbook.extraction;
 
+import it.factbook.dictionary.Golem;
+
 /**
  *
  */
@@ -7,7 +9,7 @@ public class DocumentMessage {
     private String title;
     private String url;
     private String content;
-    private int golemId;
+    private Golem golem;
 
     DocumentMessage(){
 
@@ -17,7 +19,7 @@ public class DocumentMessage {
         this.content    = content;
         this.title      = link.getTitle();
         this.url        = link.getUrl();
-        this.golemId    = link.getGolemId();
+        this.golem      = link.getGolem();
     }
     public String getTitle() {
         return title;
@@ -43,11 +45,11 @@ public class DocumentMessage {
         this.content = content;
     }
 
-    public int getGolemId() {
-        return golemId;
+    public Golem getGolem() {
+        return golem;
     }
 
-    public void setGolemId(int golemId) {
-        this.golemId = golemId;
+    public void setGolem(Golem golem) {
+        this.golem = golem;
     }
 }

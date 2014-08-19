@@ -78,7 +78,7 @@ public class CrawlerLog {
                 ps.setLong      (3, requestLogId);
                 ps.setString    (4, links.get(i).getUrlHash());
                 ps.setString    (5, links.get(i).getUrl());
-                ps.setInt       (6, links.get(i).getGolemId());
+                ps.setInt       (6, links.get(i).getGolem().getId());
                 ps.setTimestamp (7, foundTimestamp);
             }
 
@@ -140,7 +140,7 @@ public class CrawlerLog {
                     ps.setLong(1, profileId);
                     ps.setInt(2, searchEngine.getId());
                     ps.setLong(3, profileVersion);
-                    ps.setInt(4, query.golemId);
+                    ps.setInt(4, query.golem.getId());
                     ps.setString(5, query.query);
                     ps.setString(6, DigestUtils.sha1Hex(query.query));
                     ps.setTimestamp(7, new Timestamp(System.currentTimeMillis()));

@@ -2,6 +2,7 @@ package it.factbook.extraction;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
+import it.factbook.dictionary.Golem;
 import it.factbook.search.repository.DocumentRepositoryConfig;
 import it.factbook.sphinx.SphinxIndexUpdater;
 import org.slf4j.Logger;
@@ -35,8 +36,8 @@ public class IndexUpdater implements MessageListener{
             FactsMessage msg = jsonMapper.readValue(message.getBody(), FactsMessage.class);
             if (msg.getFacts().size() > 0) {
                 log.debug("Received message. Facts count: {}", msg.getFacts().size());
-                int golemId = msg.getFacts().get(0).getGolemId();
-                sphinxIndexUpdater.updateIndex(msg.getFacts(), config.rtIndexes.get(golemId).get(0));
+                Golem golem = msg.getFacts().get(0).getGolem();
+                sphinxIndexUpdater.updateIndex(msg.getFacts(), config.rtIndexes.get(golem).get(0));
             }
         } catch (IOException e) {
             log.error("Error during unpack DocumentMessage: {}", e);

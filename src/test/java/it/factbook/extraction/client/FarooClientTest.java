@@ -1,5 +1,6 @@
 package it.factbook.extraction.client;
 
+import it.factbook.dictionary.Golem;
 import it.factbook.extraction.Link;
 import it.factbook.extraction.MessageFixtures;
 import org.junit.Test;
@@ -19,7 +20,7 @@ public class FarooClientTest {
 
     @Test
     public void testGetLinks() throws Exception {
-       List<Link> links = fc.getLinks(new Query(2, "iphone ios"));
+       List<Link> links = fc.getLinks(new Query(Golem.WIKI_EN, "iphone ios"));
        assertEquals(10, links.size());
     }
 }
