@@ -29,6 +29,7 @@ public class CrawlerLogTest {
     private static final long PROFILE_ID = 1;
     private static final SearchEngine SE = SearchEngine.FAROO;
     private static final long PROFILE_VERSION = 111;
+    private static final long REQUEST_LOG_ID = 1;
     private static List<Link> linksToLog = new ArrayList<>(3);
     static {
         linksToLog.add(new Link("http://www.era.com/articles/1", "Just a few words", " We are talking about iOS", Golem.WIKI_EN));
@@ -74,8 +75,8 @@ public class CrawlerLogTest {
             int downloadSizeByte;
             int downloadTimeMsec;
         }
-        crawlerLog.logFoundLinks(PROFILE_ID, SE, PROFILE_VERSION, linksToLog);
-        crawlerLog.logDownloadedArticles(PROFILE_ID, SE, PROFILE_VERSION, linksToLog.get(0).getUrl(),
+        crawlerLog.logFoundLinks(PROFILE_ID, SE, REQUEST_LOG_ID, linksToLog);
+        crawlerLog.logDownloadedArticles(REQUEST_LOG_ID, linksToLog.get(0).getUrl(),
                 "Apple spent a significant amount of its WWDC 2014 keynote focusing on iOS 8, which takes the flat iOS 7 design and only rounds it out with new features.\n" +
                         "That means instead of a dramatic redesign, you can expect this year's mobile operating system update to tie everything together with the overarching theme of \"convergence.\"",
                 new DateTime().minusMillis(2000).getMillis(), ""); // imitate download started 2 sec ago
@@ -113,6 +114,27 @@ public class CrawlerLogTest {
         long requestId = crawlerLog.logSearchRequest(PROFILE_ID, SE, PROFILE_VERSION, new Query(Golem.WIKI_EN,"query"));
         long rowCount = jdbcTemplate.queryForObject("SELECT COUNT(1) FROM RequestLog", (row, rowNm) -> row.getLong(1));
         assertEquals(1, rowCount);
+        assertTrue(requestId > 0);
+    }
+
+    @Test
+    public void testLogReturnedResults(){
+        jdbcTemplate.execute("TRUNCATE TABLE RequestLog");
+        long requestId = crawlerLog.logSearchRequest(PROFILE_ID, SE, PROFILE_VERSION, new Query(Golem.WIKI_EN,"query"));
+        crawlerLog.logReturnedResults(requestId, 10, 5);
+        class Row {
+            int resultsReturned;
+            int newLinks;
+            Row (int returnedResults, int newLinks){
+                this.resultsReturned = returnedResults;
+                this.newLinks = newLinks;
+            }
+        }
+        Row r = jdbcTemplate.queryForObject("SELECT resultsReturned, newLinks FROM RequestLog WHERE requestLogId = ?",
+                new Object[]{requestId}, new int[]{Types.BIGINT},
+                (row, rowNm) -> new Row(row.getInt(1), row.getInt(2)));
+        assertEquals(10, r.resultsReturned);
+        assertEquals(5, r.newLinks);
         assertTrue(requestId > 0);
     }
 }

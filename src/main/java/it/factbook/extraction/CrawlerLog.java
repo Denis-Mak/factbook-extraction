@@ -91,17 +91,15 @@ public class CrawlerLog {
 
     /**
      * Add to link records info about downloaded document
-     * @param profileId
-     * @param searchEngine
      * @param requestLogId
      * @param url
      * @param articleBody
      * @param downloadStart
      */
-    public void logDownloadedArticles(long profileId, SearchEngine searchEngine, long requestLogId, String url,
-                                      String articleBody, long downloadStart, String errorMsg){
+    public void logDownloadedArticles(long requestLogId, String url, String articleBody,
+                                      long downloadStart, String errorMsg){
         String UPDATE = "UPDATE CrawlerLog SET downloadStart=?, downloadTimeMsec=?, downloadSizeByte=?, errorCode=?, errorMsg=? " +
-                "WHERE profileId=? AND searchEngineId=? AND requestLogId=? AND urlHash=?";
+                "WHERE requestLogId=? AND urlHash=?";
         int downloadTime = new Long(System.currentTimeMillis() - downloadStart).intValue();
         int errCode = 200;
         if (errorMsg.contains("Server returned HTTP response code")){
@@ -115,10 +113,8 @@ public class CrawlerLog {
             ps.setInt       (3, articleBody.length());
             ps.setInt       (4, errCodeFinal);
             ps.setString    (5, errorMsg);
-            ps.setLong      (6, profileId);
-            ps.setInt       (7, searchEngine.getId());
-            ps.setLong      (8, requestLogId);
-            ps.setString    (9, DigestUtils.sha1Hex(url));
+            ps.setLong      (6, requestLogId);
+            ps.setString    (7, DigestUtils.sha1Hex(url));
         });
     }
 
@@ -147,5 +143,16 @@ public class CrawlerLog {
                     return ps;
                 }, keyHolder);
         return (long)keyHolder.getKey();
+    }
+
+    /**
+     *
+     * @param requestLogId
+     * @param resultsReturned
+     */
+    public void logReturnedResults(long requestLogId, int resultsReturned, int newLinks){
+        String UPDATE = "UPDATE RequestLog SET resultsReturned=?, newLinks=? WHERE requestLogId=?";
+        jdbcTemplate.update(UPDATE, new Object[]{resultsReturned, newLinks, requestLogId},
+                new int[]{Types.INTEGER, Types.INTEGER, Types.BIGINT});
     }
 }

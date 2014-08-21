@@ -11,9 +11,9 @@ public class MessageFixtures {
     public static ObjectMapper mapper = new ObjectMapper();
     public static String profileMessageJson = "{\"profileId\":0, \"initialQuery\":\"\","+
             "\"queryLines\":[" +
-            "[[{\"word\":\"ios\",\"golemId\":2},{\"word\":\"iphone\",\"golemId\":2}]]," +
-            "[[{\"word\":\"power\",\"golemId\":2},{\"word\":\"consumption\",\"golemId\":2}]]," +
-            "[[{\"word\":\"телефон\",\"golemId\":1},{\"word\":\"эпл\",\"golemId\":1}]]]}";
+            "[[{\"word\":\"ios\",\"golem\":\"WIKI_EN\"},{\"word\":\"iphone\",\"golem\":\"WIKI_EN\"}]]," +
+            "[[{\"word\":\"power\",\"golem\":\"WIKI_EN\"},{\"word\":\"consumption\",\"golem\":\"WIKI_EN\"}]]," +
+            "[[{\"word\":\"телефон\",\"golem\":\"WIKI_RU\"},{\"word\":\"эпл\",\"golem\":\"WIKI_RU\"}]]]}";
 
     public static ProfileMessage profileMessage;
     static {

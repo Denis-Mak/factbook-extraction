@@ -18,7 +18,7 @@ create table CrawlerLog
     downloadSizeByte      int,
     errorCode             int,
     errorMsg              varchar(2048),
-    primary key (profileId, searchEngineId, requestLogId, urlHash),
+    primary key (requestLogId, urlHash),
     index CrawlerLog_urlHash_idx (urlHash)
 ) ENGINE = MYISAM;
 
@@ -33,6 +33,8 @@ create table RequestLog
     query                 varchar(2048) collate 'utf8_bin',
     queryHash             char(40),
     requested             datetime,
+    resultsReturned       int,
+    newLinks              int,
     primary key (requestLogId),
     index RequestLog_profileId_idx (profileId)
 ) ENGINE = MYISAM;

@@ -3,6 +3,8 @@ package it.factbook.extraction.config;
 import it.factbook.extraction.Crawler;
 import it.factbook.extraction.FactSaver;
 import it.factbook.extraction.IndexUpdater;
+import it.factbook.extraction.client.BingClient;
+import it.factbook.extraction.client.FarooClient;
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -12,8 +14,6 @@ import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import it.factbook.extraction.client.BingClient;
-import it.factbook.extraction.client.FarooClient;
 
 import static org.springframework.amqp.core.BindingBuilder.bind;
 
@@ -150,6 +150,7 @@ public class AmqpConfig {
         SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory());
         container.setQueues(factSaverQueue());
         container.setMessageListener(factSaver());
+        container.setMaxConcurrentConsumers(10);
         return container;
     }
 

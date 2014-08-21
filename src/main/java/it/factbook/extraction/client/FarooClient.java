@@ -45,6 +45,7 @@ public class FarooClient extends AbstractSearchEngineClient implements MessageLi
             long requestLogId = crawlerLog.logSearchRequest(profileMessage.getProfileId(), SEARCH_ENGINE, profileVersion, query);
             List<Link> foundLinks = getLinks(query);
             List<Link> linksToCrawl = crawlerLog.getLinksToCrawl(foundLinks);
+            crawlerLog.logReturnedResults(requestLogId, foundLinks.size(), linksToCrawl.size());
             if (linksToCrawl.size() > 0) {
                 crawlerLog.logFoundLinks(profileMessage.getProfileId(), SEARCH_ENGINE, requestLogId, foundLinks);
                 SearchResultsMessage searchResultsMessage = new SearchResultsMessage(linksToCrawl);

@@ -23,6 +23,8 @@ import org.xml.sax.SAXException;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  *
@@ -48,33 +50,35 @@ public class Crawler implements MessageListener{
             log.error("Error during unpack SearchResultsMessage: {}", e);
         }
         log.debug("Received message. ProfileId: {}. Qty of links: {}.", searchResultsMessage.getProfileId(), searchResultsMessage.getLinks().size());
+        final long requestLogId = searchResultsMessage.getRequestLogId();
+        ExecutorService executor = Executors.newFixedThreadPool(5);
         for (Link link: searchResultsMessage.getLinks()){
-            long startDownload = System.currentTimeMillis();
-            String articleBody = "";
-            try {
-                articleBody = downloadArticle(link.getUrl());
-                crawlerLog.logDownloadedArticles(searchResultsMessage.getProfileId(),
-                        searchResultsMessage.getSearchEngine(),
-                        searchResultsMessage.getRequestLogId(),
-                        link.getUrl(),
-                        articleBody,
-                        startDownload,
-                        "");
-            } catch (Exception e) {
-                log.error("Error get results: ", e);
-                log.error("URL: {}", link.getUrl());
-                crawlerLog.logDownloadedArticles(searchResultsMessage.getProfileId(),
-                        searchResultsMessage.getSearchEngine(),
-                        searchResultsMessage.getRequestLogId(),
-                        link.getUrl(),
-                        "",
-                        startDownload,
-                        e.getMessage());
-            }
-            if (articleBody.length() > 0) {
-                DocumentMessage documentMessage = new DocumentMessage(link, articleBody);
-                passDocumentToFactSaver(documentMessage);
-            }
+            executor.execute(() -> {
+                long startDownload = System.currentTimeMillis();
+                String articleBody = "";
+                try {
+                    log.debug("Start download link: {}", link.getUrl());
+                    articleBody = downloadArticle(link.getUrl());
+                    crawlerLog.logDownloadedArticles(requestLogId,
+                            link.getUrl(),
+                            articleBody,
+                            startDownload,
+                            "");
+                    log.debug("Link downloaded: {}", link.getUrl());
+                } catch (Exception e) {
+                    log.error("Error get results: ", e);
+                    log.error("URL: {}", link.getUrl());
+                    crawlerLog.logDownloadedArticles(requestLogId,
+                            link.getUrl(),
+                            "",
+                            startDownload,
+                            e.getMessage());
+                }
+                if (articleBody.length() > 0) {
+                    DocumentMessage documentMessage = new DocumentMessage(link, articleBody);
+                    passDocumentToFactSaver(documentMessage);
+                }
+            });
         }
 
     }

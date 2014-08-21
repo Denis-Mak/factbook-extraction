@@ -42,6 +42,7 @@ public class BingClient extends AbstractSearchEngineClient implements MessageLis
             long requestLogId = crawlerLog.logSearchRequest(profileMessage.getProfileId(), SEARCH_ENGINE, profileVersion, query);
             List<Link> foundLinks = getLinks(query);
             List<Link> linksToCrawl = crawlerLog.getLinksToCrawl(foundLinks);
+            crawlerLog.logReturnedResults(requestLogId, foundLinks.size(), linksToCrawl.size());
             if (linksToCrawl.size() > 0) {
                 crawlerLog.logFoundLinks(profileMessage.getProfileId(), SEARCH_ENGINE, requestLogId, foundLinks);
                 SearchResultsMessage searchResultsMessage = new SearchResultsMessage(linksToCrawl);
@@ -101,7 +102,7 @@ public class BingClient extends AbstractSearchEngineClient implements MessageLis
     List<Link> getLinks(Query query){
         List<Link> links = new ArrayList<>(100);
         try {
-            JsonNode root = jsonMapper.readTree(WebHelper.getUrl(buildUrl(query.query), null, appKey, appKey));
+            JsonNode root = jsonMapper.readTree(WebHelper.getUrl(buildUrl(query), null, appKey, appKey));
             JsonNode results = root.path("d").path("results").get(0).path("Web");
             Iterator<JsonNode> itr = results.elements();
             while (itr.hasNext()) {
@@ -118,17 +119,17 @@ public class BingClient extends AbstractSearchEngineClient implements MessageLis
         return links;
     }
 
-    private String buildUrl(String query){
+    private String buildUrl(Query query){
         String encQuery = null;
         try {
-            encQuery = URLEncoder.encode(query, "UTF-8");
+            encQuery = URLEncoder.encode(query.query, "UTF-8");
         } catch (UnsupportedEncodingException e) {
             log.error("Unsupported Encoding!");
         }
         return "https://api.datamarket.azure.com/Bing/Search/Composite?"
 
                 // Common request fields (required)
-                + "Query=%27" + encQuery + "%27"
+                + "Query=%27" + encQuery + "+language:" + query.golem.getMainLang().getCode().toLowerCase() + "%27"
                 + "&Sources=%27web%27"
 
                 // Web-specific request fields (optional)
