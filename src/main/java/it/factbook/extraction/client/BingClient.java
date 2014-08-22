@@ -1,8 +1,6 @@
 package it.factbook.extraction.client;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import it.factbook.dictionary.Golem;
-import it.factbook.dictionary.WordForm;
 import it.factbook.extraction.Link;
 import it.factbook.extraction.ProfileMessage;
 import it.factbook.extraction.SearchResultsMessage;
@@ -16,7 +14,6 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -52,51 +49,6 @@ public class BingClient extends AbstractSearchEngineClient implements MessageLis
                 passResultsToCrawler(searchResultsMessage);
             }
         }
-    }
-
-    List<Query> getQueries(ProfileMessage profileMessage) {
-        int WORDGRAMS_IN_ONE_QUERY = 5;
-        List<Query> wordgramQueries = new ArrayList<>();
-        for (List<List<WordForm>> line: profileMessage.getQueryLines()){
-            for(List<WordForm> wordgram: line){
-                String query = "";
-                query += "(";
-                for (WordForm word : wordgram) {
-                    query += word.getWord() + " ";
-                }
-                query = query.substring(0, query.length()-1) + ")";
-                wordgramQueries.add(new Query(wordgram.get(0).getGolem(), query));
-            }
-        }
-        Collections.sort(wordgramQueries, (q1, q2) -> q1.golem.getId() - q2.golem.getId());
-        List<Query> queries = new ArrayList<>();
-        String query = "";
-        int wordgramCounter = 0;
-        Golem golem = Golem.UNKNOWN;
-        boolean hasInitialQuery = profileMessage.getInitialQuery() != null && profileMessage.getInitialQuery().length() > 0;
-        for (Query each:wordgramQueries){
-            if (wordgramCounter > 0 && (each.golem != golem || wordgramCounter >= WORDGRAMS_IN_ONE_QUERY)){
-                wordgramCounter = 0;
-                query = query.substring(0, query.length()-3);
-                if (hasInitialQuery) query += ")";
-                queries.add(new Query(golem, query));
-            }
-            if (wordgramCounter == 0){
-                golem = each.golem;
-                if (hasInitialQuery){
-                    query = profileMessage.getInitialQuery() + " (";
-                } else {
-                    query = "";
-                }
-            }
-            wordgramCounter++;
-            query += each.query + " | ";
-        }
-        query = query.substring(0, query.length()-3);
-        if (hasInitialQuery) query += ")";
-        queries.add(new Query(golem, query));
-
-        return queries;
     }
 
     List<Link> getLinks(Query query){
