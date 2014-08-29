@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -23,7 +24,9 @@ import java.util.List;
 public class BingClient extends AbstractSearchEngineClient implements MessageListener {
     private static final SearchEngine SEARCH_ENGINE = SearchEngine.BING;
     private static final Logger log = LoggerFactory.getLogger(BingClient.class);
-    private static final String appKey = "***REMOVED***";
+
+    @Value("${bing.client.api.key}")
+    private String appKey;
 
     @Override
     protected Logger log() {
@@ -52,9 +55,9 @@ public class BingClient extends AbstractSearchEngineClient implements MessageLis
     }
 
     List<Link> getLinks(Query query){
-        List<Link> links = new ArrayList<>(100);
+        List<Link> links = new ArrayList<>(50);
         try {
-            JsonNode root = jsonMapper.readTree(WebHelper.getUrl(buildUrl(query), null, appKey, appKey));
+            JsonNode root = jsonMapper.readTree(WebHelper.getContent(buildUrl(query), null, appKey, appKey));
             JsonNode results = root.path("d").path("results").get(0).path("Web");
             Iterator<JsonNode> itr = results.elements();
             while (itr.hasNext()) {

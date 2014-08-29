@@ -1,18 +1,16 @@
 package it.factbook.extraction.client;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import it.factbook.dictionary.Golem;
 import it.factbook.extraction.Link;
 import it.factbook.extraction.ProfileMessage;
 import it.factbook.extraction.SearchResultsMessage;
-import it.factbook.dictionary.WordForm;
+import it.factbook.extraction.util.WebHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import it.factbook.extraction.util.WebHelper;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -25,19 +23,20 @@ import java.util.List;
  *
  */
 @Component
-public class FarooClient extends AbstractSearchEngineClient implements MessageListener{
-    private static final SearchEngine SEARCH_ENGINE = SearchEngine.FAROO;
-    static Logger log = LoggerFactory.getLogger(FarooClient.class);
+public class YandexClient extends AbstractSearchEngineClient implements MessageListener {
+    private static final SearchEngine SEARCH_ENGINE = SearchEngine.YANDEX;
+    private static final Logger log = LoggerFactory.getLogger(YandexClient.class);
 
-    @Value("${faroo.client.api.key}")
+    @Value("${yandex.client.user}")
+    private String user;
+
+    @Value("${yandex.client.api.key}")
     private String appKey;
 
     @Override
     protected Logger log() {
         return log;
     }
-
-    private static long lastAccessed = 0;
 
     @Override
     public void onMessage(Message message) {
@@ -60,68 +59,36 @@ public class FarooClient extends AbstractSearchEngineClient implements MessageLi
         }
     }
 
-    @Override
-    protected List<Query> getQueries(ProfileMessage msg){
-        List<Query> queries = new ArrayList<>(50);
-        for (List<List<WordForm>> line: msg.getQueryLines()){
-            for(List<WordForm> wordgram: line){
-                Golem golem = wordgram.get(0).getGolem();
-                if (SEARCH_ENGINE.containsGolem(golem)) {
-                    String query = msg.getInitialQuery() != null ? msg.getInitialQuery() : "";
-                    for (WordForm word : wordgram) {
-                        query += " " + word.getWord();
-                    }
-                    queries.add(new Query(golem, query));
-                }
-            }
-        }
-
-        return queries;
-    }
-
     List<Link> getLinks(Query query){
-        List<Link> links = new ArrayList<>(100);
+        List<Link> links = new ArrayList<>(10);
         try {
-            pauseBetweenRequests();
-            JsonNode root = jsonMapper.readTree(WebHelper.getContent(buildUrl(query.query)));
-            JsonNode results = root.path("results");
+            JsonNode root = jsonMapper.readTree(WebHelper.getContent(buildUrl(query)));
+            JsonNode results = root.path("items");
             Iterator<JsonNode> itr = results.elements();
             while (itr.hasNext()) {
                 JsonNode res = itr.next();
-                links.add(new Link( res.path("url").textValue(),
-                                    res.path("title").textValue(),
-                                    res.path("kwic").textValue(),
-                                    query.golem));
+                links.add(new Link( res.path("link").textValue(),
+                        res.path("title").textValue(),
+                        res.path("snippet").textValue(),
+                        query.golem));
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Error on request: {} ", query.query);
+            log.error("Error info:", e);
         }
         return links;
     }
 
-    private String buildUrl(String query){
+    private String buildUrl(Query query){
         String encQuery = null;
         try {
-            encQuery = URLEncoder.encode(query, "UTF-8");
+            encQuery = URLEncoder.encode(query.query, "UTF-8");
         } catch (UnsupportedEncodingException e) {
             log.error("Unsupported Encoding!");
         }
-        return "http://www.faroo.com/api?q=" + encQuery + "&start=1&length=10&l=en&src=news&i=false&f=json&key=" + appKey;
-    }
 
-    private void pauseBetweenRequests() {
-        long timeToWait = 0;
-        if(lastAccessed > 0)
-            timeToWait = 1000 - (System.currentTimeMillis() - lastAccessed);
-
-        if(timeToWait > 0) {
-            try {
-                Thread.sleep(timeToWait);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-
-        lastAccessed = System.currentTimeMillis();
+        return "http://xmlsearch.yandex.ru/xmlsearch?user=" + user +
+                "&key=" + appKey +
+                "&query=" + encQuery;
     }
 }

@@ -5,6 +5,8 @@ import it.factbook.extraction.FactSaver;
 import it.factbook.extraction.IndexUpdater;
 import it.factbook.extraction.client.BingClient;
 import it.factbook.extraction.client.FarooClient;
+import it.factbook.extraction.client.GoogleClient;
+import it.factbook.extraction.client.YahooClient;
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -76,7 +78,7 @@ public class AmqpConfig {
     }
 
     @Bean
-    MessageListener farooClient() {
+    FarooClient farooClient() {
         return new FarooClient();
     }
 
@@ -100,8 +102,56 @@ public class AmqpConfig {
     }
 
     @Bean
-    MessageListener bingClient() {
+    BingClient bingClient() {
         return new BingClient();
+    }
+
+    //Google
+    @Bean
+    public static Queue googleQueue() {
+        return new Queue("google-query");
+    }
+
+    @Bean
+    Binding bindingGoogle() {
+        return bind(googleQueue()).to(searchExtractionExchange()).with("*");
+    }
+
+    @Bean
+    SimpleMessageListenerContainer googleClientContainer() {
+        SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory());
+        container.setQueues(googleQueue());
+        container.setMessageListener(googleClient());
+        return container;
+    }
+
+    @Bean
+    GoogleClient googleClient() {
+        return new GoogleClient();
+    }
+
+    //YAHOO
+    @Bean
+    public static Queue yahooQueue() {
+        return new Queue("yahoo-query");
+    }
+
+    @Bean
+    Binding bindingYahoo() {
+        return bind(yahooQueue()).to(searchExtractionExchange()).with("YAHOOO");
+    }
+
+    @Bean
+    SimpleMessageListenerContainer yahooClientContainer() {
+        SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory());
+        container.setQueues(yahooQueue());
+        container.setMessageListener(yahooClient());
+        return container;
+    }
+
+    @Bean
+    YahooClient yahooClient() {
+        return new YahooClient();
     }
 
     // ////////////

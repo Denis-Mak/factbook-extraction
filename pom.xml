@@ -56,6 +56,7 @@
         <guava.version>10.0.1</guava.version>
         <commons-codec.version>1.8</commons-codec.version>
         <commons-daemon.version>1.0.15</commons-daemon.version>
+        <google-oauth.version>1.19.0</google-oauth.version>
 
         <compiler.plugin.version>3.1</compiler.plugin.version>
         <surefire.version>2.17</surefire.version>
@@ -165,6 +166,14 @@
             <artifactId>commons-daemon</artifactId>
             <version>${commons-daemon.version}</version>
         </dependency>
+
+        <!-- OAuth client library-->
+        <dependency>
+            <groupId>oauth.signpost</groupId>
+            <artifactId>signpost-core</artifactId>
+            <version>1.2</version>
+        </dependency>
+
     </dependencies>
     <build>
         <resources>
