@@ -3,7 +3,7 @@ package it.factbook.extraction;
 import it.factbook.dictionary.Golem;
 import it.factbook.extraction.client.Query;
 import it.factbook.extraction.client.SearchEngine;
-import it.factbook.extraction.config.DataSourceConfigurationTest;
+import it.factbook.extraction.config.ConfigPropertiesTest;
 import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.Test;
@@ -24,7 +24,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes=DataSourceConfigurationTest.class, loader=AnnotationConfigContextLoader.class)
+@ContextConfiguration(classes= ConfigPropertiesTest.class, loader=AnnotationConfigContextLoader.class)
 public class CrawlerLogTest {
     private static final long PROFILE_ID = 1;
     private static final SearchEngine SE = SearchEngine.FAROO;

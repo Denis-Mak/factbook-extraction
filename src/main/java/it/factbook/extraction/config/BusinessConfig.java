@@ -1,6 +1,24 @@
 package it.factbook.extraction.config;
 
 import com.jolbox.bonecp.BoneCPDataSource;
+import it.factbook.dictionary.LangDetector;
+import it.factbook.dictionary.LangDetectorCybozuImpl;
+import it.factbook.dictionary.parse.TreeParser;
+import it.factbook.dictionary.repository.StemAdapter;
+import it.factbook.dictionary.repository.WordFormAdapter;
+import it.factbook.dictionary.repository.jdbc.StemAdapterJdbcImpl;
+import it.factbook.dictionary.repository.jdbc.WordFormAdapterJdbcImpl;
+import it.factbook.extraction.ClusterProcessor;
+import it.factbook.extraction.CrawlerLog;
+import it.factbook.search.DocumentToFactSplitter;
+import it.factbook.search.repository.ClusterAdapter;
+import it.factbook.search.repository.DocumentRepositoryConfig;
+import it.factbook.search.repository.FactAdapter;
+import it.factbook.search.repository.jdbc.ClusterAdapterJdbcImpl;
+import it.factbook.search.repository.jdbc.FactAdapterJdbcImpl;
+import it.factbook.sphinx.SphinxIndexUpdater;
+import it.factbook.util.TextSplitter;
+import it.factbook.util.TextSplitterOpenNlpRuImpl;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,7 +29,7 @@ import javax.sql.DataSource;
  *
  */
 @Configuration
-public class DataSourceConfig {
+public class BusinessConfig {
     @Value("${jdbc.doccache.url}")
     private String jdbcDoccacheUrl;
 
@@ -93,4 +111,45 @@ public class DataSourceConfig {
 
         return dataSource;
     }
+
+    @Bean(initMethod = "init")
+    public static DocumentRepositoryConfig documentRepositoryConfig(){
+        return new DocumentRepositoryConfig();
+    }
+
+    //Helper beans
+    @Bean
+    public DocumentToFactSplitter documentToFactSplitter(){return new DocumentToFactSplitter();}
+
+    @Bean
+    public FactAdapter factAdapter() {return new FactAdapterJdbcImpl();}
+
+    @Bean
+    public CrawlerLog crawlerLog(){
+        return new CrawlerLog();
+    }
+
+    @Bean
+    public SphinxIndexUpdater sphinxIndexUpdater() {return new SphinxIndexUpdater();}
+
+    @Bean
+    public TextSplitter textSplitter() {return new TextSplitterOpenNlpRuImpl();}
+
+    @Bean
+    public LangDetector langDetector() {return new LangDetectorCybozuImpl();}
+
+    @Bean
+    public WordFormAdapter wordFormAdapter() {return new WordFormAdapterJdbcImpl();}
+
+    @Bean
+    public StemAdapter stemAdapter() {return new StemAdapterJdbcImpl();}
+
+    @Bean
+    public ClusterAdapter clusterAdapter() {return new ClusterAdapterJdbcImpl();}
+
+    @Bean
+    public TreeParser treeParser() {return new TreeParser();}
+
+    @Bean
+    public ClusterProcessor clusterProcessor() {return new ClusterProcessor();}
 }

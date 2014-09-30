@@ -39,6 +39,9 @@ public class FactSaver implements MessageListener{
     private AmqpTemplate amqpTemplate;
 
     @Autowired
+    private AmqpConfig amqpConfig;
+
+    @Autowired
     private LangDetector langDetector;
 
     @Override
@@ -75,14 +78,14 @@ public class FactSaver implements MessageListener{
                 .collect(Collectors.toList());
         FactsMessage factsMessage = new FactsMessage();
         factsMessage.setFacts(factsWithDocHeader);
-        passFactsToIndexUpdater(factsMessage);
+        passFactsToClusterProcessor(factsMessage);
     }
 
-    private void passFactsToIndexUpdater(FactsMessage factsMessage) {
+    private void passFactsToClusterProcessor(FactsMessage factsMessage) {
         try {
             jsonMapper.registerModule(new JodaModule());
             String json = jsonMapper.writeValueAsString(factsMessage);
-            amqpTemplate.convertAndSend(AmqpConfig.indexUpdaterExchange().getName(), "#", json);
+            amqpTemplate.convertAndSend(amqpConfig.clusterProcessorExchange().getName(), "#", json);
         } catch (JsonProcessingException e) {
             log.error("Error converting FactMessage: {}", e);
         }

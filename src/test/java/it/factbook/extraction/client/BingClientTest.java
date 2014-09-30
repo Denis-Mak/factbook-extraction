@@ -3,7 +3,7 @@ package it.factbook.extraction.client;
 import it.factbook.dictionary.Golem;
 import it.factbook.extraction.Link;
 import it.factbook.extraction.MessageFixtures;
-import it.factbook.extraction.config.DataSourceConfigurationTest;
+import it.factbook.extraction.config.ConfigPropertiesTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +19,7 @@ import static org.junit.Assert.assertEquals;
  *
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes=DataSourceConfigurationTest.class, loader=AnnotationConfigContextLoader.class)
+@ContextConfiguration(classes= ConfigPropertiesTest.class, loader=AnnotationConfigContextLoader.class)
 public class BingClientTest {
     @Autowired
     private BingClient bc;

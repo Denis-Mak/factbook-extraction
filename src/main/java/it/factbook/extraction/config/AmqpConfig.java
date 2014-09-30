@@ -1,5 +1,6 @@
 package it.factbook.extraction.config;
 
+import it.factbook.extraction.ClusterProcessor;
 import it.factbook.extraction.Crawler;
 import it.factbook.extraction.FactSaver;
 import it.factbook.extraction.IndexUpdater;
@@ -162,7 +163,7 @@ public class AmqpConfig {
     }
 
     @Bean
-    public static FanoutExchange crawlerExchange() {return new FanoutExchange("links-for-crawler-exchange");}
+    public static FanoutExchange crawlerExchange() {return new FanoutExchange("links-exchange");}
 
     @Bean
     Binding bindingCrawler() {
@@ -190,7 +191,7 @@ public class AmqpConfig {
     }
 
     @Bean
-    public static FanoutExchange factSaverExchange() { return new FanoutExchange("documents-for-fact-saver-exchange");}
+    public static FanoutExchange factSaverExchange() { return new FanoutExchange("documents-exchange");}
 
     @Bean
     Binding bindingFactSaver(){ return bind(factSaverQueue()).to(factSaverExchange());}
@@ -208,13 +209,38 @@ public class AmqpConfig {
     MessageListener factSaver(){return new FactSaver();}
 
     // ////////////
+    // Cluster processor
+    @Bean
+    public Queue clusterProcessorQueue() {return new Queue("facts-to-cluster-query");}
+
+    @Bean
+    public FanoutExchange clusterProcessorExchange(){
+        return new FanoutExchange("facts-exchange");
+    }
+
+    @Bean
+    Binding bindingClusterProcessor(){return bind(clusterProcessorQueue()).to(clusterProcessorExchange());}
+
+    @Bean
+    SimpleMessageListenerContainer clusterProcessorContainer(){
+        SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory());
+        container.setQueues(clusterProcessorQueue());
+        container.setMessageListener(clusterProcessor());
+        container.setMaxConcurrentConsumers(10);
+        return container;
+    }
+
+    @Bean
+    MessageListener clusterProcessor(){return new ClusterProcessor();}
+
+    // ////////////
     //IndexUpdater
     @Bean
     public static Queue indexUpdaterQueue() {return new Queue("facts-add-to-index-query");}
 
     @Bean
     public static FanoutExchange indexUpdaterExchange(){
-        return new FanoutExchange("facts-add-to-index-exchange");
+        return new FanoutExchange("facts-clustered-exchange");
     }
 
     @Bean

@@ -6,6 +6,7 @@ import java.io.IOException;
 
 import static org.junit.Assert.assertTrue;
 
+
 public class CrawlerTest {
     private static Crawler crawler = new Crawler();
 

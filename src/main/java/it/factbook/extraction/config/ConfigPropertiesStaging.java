@@ -7,8 +7,9 @@ import org.springframework.context.annotation.Import;
  *
  */
 @Configuration
-@Import ({AmqpConfig.class, DataSourceConfig.class})
-public class DataSourceConfigurationStaging extends AbstractBusinessConfig {
+@Import({AmqpConfig.class, BusinessConfigStaging.class})
+public class ConfigPropertiesStaging extends AbstractConfigProperties {
+
     @Override
     protected String dbPropertyFile() {return "jdbc.staging.properties"; }
 

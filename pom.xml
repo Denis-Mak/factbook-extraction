@@ -12,7 +12,7 @@
         <profile>
             <id>production</id>
             <properties>
-                <pom.build.config>it.factbook.extraction.config.DataSourceConfigurationProduction</pom.build.config>
+                <pom.build.config>it.factbook.extraction.config.ConfigPropertiesProduction</pom.build.config>
                 <log.level>WARN</log.level>
                 <spring.log.level>INFO</spring.log.level>
                 <service.log.level>DEBUG</service.log.level>
@@ -21,7 +21,7 @@
         <profile>
             <id>staging</id>
             <properties>
-                <pom.build.config>it.factbook.extraction.config.DataSourceConfigurationStaging</pom.build.config>
+                <pom.build.config>it.factbook.extraction.config.ConfigPropertiesStaging</pom.build.config>
                 <log.level>DEBUG</log.level>
                 <spring.log.level>INFO</spring.log.level>
                 <service.log.level>DEBUG</service.log.level>
@@ -33,7 +33,7 @@
                 <activeByDefault>true</activeByDefault>
             </activation>
             <properties>
-                <pom.build.config>it.factbook.extraction.config.DataSourceConfigurationTest</pom.build.config>
+                <pom.build.config>it.factbook.extraction.config.ConfigPropertiesTest</pom.build.config>
                 <log.level>DEBUG</log.level>
                 <spring.log.level>INFO</spring.log.level>
                 <service.log.level>DEBUG</service.log.level>

@@ -1,7 +1,7 @@
 package it.factbook.extraction;
 
 import it.factbook.extraction.config.AmqpConfig;
-import it.factbook.extraction.config.DataSourceConfigurationTest;
+import it.factbook.extraction.config.ConfigPropertiesTest;
 import it.factbook.search.repository.DocumentRepositoryConfig;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -22,7 +22,7 @@ import javax.sql.DataSource;
  *
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes=DataSourceConfigurationTest.class, loader=AnnotationConfigContextLoader.class)
+@ContextConfiguration(classes= ConfigPropertiesTest.class, loader=AnnotationConfigContextLoader.class)
 public class IntegrationTest implements Runnable {
     private JdbcTemplate jdbcTemplate;
 
