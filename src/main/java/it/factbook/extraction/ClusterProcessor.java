@@ -10,6 +10,7 @@ import it.factbook.search.Cluster;
 import it.factbook.search.Fact;
 import it.factbook.search.repository.ClusterAdapter;
 import it.factbook.search.repository.FactAdapter;
+import it.factbook.util.BitUtils;
 import it.factbook.util.DbUtils;
 import it.factbook.util.StringUtils;
 import it.factbook.util.TextSplitter;
@@ -21,7 +22,9 @@ import org.springframework.amqp.core.MessageListener;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  *
@@ -32,21 +35,16 @@ public class ClusterProcessor implements MessageListener {
 
     private static final Logger log = LoggerFactory.getLogger(ClusterProcessor.class);
 
-    private static long roughClusterCalcTiming      = 0;
+    public static long fingerprintCalcTiming = 0;
     private static long getWordFormsTiming          = 0;
     private static long findCloseClustersTiming     = 0;
     private static long calculateClusterIdTiming    = 0;
     private static long createClustersTiming        = 0;
     private static long updateFactsTiming           = 0;
+    private static int factProcessed                = 0;
 
-    private final static int DISTANCE_THRESHOLD = 25;
+    private final static int DISTANCE_THRESHOLD = 65;
     private final static int COMPONENTS_IN_FINGERPRINT = 5;
-    private final static Map<Integer,List<Integer>> POSSIBLE_COMBINATIONS = new HashMap<>(3);
-    static {
-        POSSIBLE_COMBINATIONS.put(20, Arrays.asList(1,20,190,1140));
-        POSSIBLE_COMBINATIONS.put(25, Arrays.asList(1,25,300,2300));
-        POSSIBLE_COMBINATIONS.put(30, Arrays.asList(1,30,435,4060));
-    }
 
     private static class Component {
         int pos;
@@ -80,39 +78,26 @@ public class ClusterProcessor implements MessageListener {
                 return;
             }
             log.debug("Received message. Facts count: {}", msg.getFacts().size());
-            List<Fact> factsWithClusterId = new ArrayList<>(msg.getFacts().size());
+            int batchSize = msg.getFacts().size();
+            List<Fact> factsWithClusterId = new ArrayList<>(batchSize);
             msg.getFacts().parallelStream()
                     .forEach(fact -> {
                         boolean[] factFingerprintVector = calculateFactFingerprint(fact);
                         int factFingerprintKey = 0;
                         int clusterId = 0;
-                        if (factFingerprintVector.length != 0) {
-                            factFingerprintKey = convertToInt(factFingerprintVector);
-                            clusterId = 0;
-                            long findingStartTime = System.currentTimeMillis();
-                            List<Cluster> clusters = getClusters(getCloseFactsFingerprints(factFingerprintVector));
-                            ClusterProcessor.findCloseClustersTiming += System.currentTimeMillis() - findingStartTime;
-                            if (clusters.size() == 0) {
-                                clusterId = createNewCluster(fact, factFingerprintKey);
-                            } else {
-                                clusterId = calculateClusterId(fact, clusters);
-                                if (clusterId == 0) {
-                                    long startTime = System.currentTimeMillis();
-                                    clusterId = createNewCluster(fact, factFingerprintKey);
-                                    ClusterProcessor.createClustersTiming += System.currentTimeMillis() - startTime;
-                                }
-                            }
-                        }
+
                         long startTime = System.currentTimeMillis();
                         Fact factWithClusterId = new Fact.Builder(fact)
                                 .clusterId(clusterId)
-                                .factFingerprint(factFingerprintKey)
+                                .factFingerprint(factFingerprintVector)
                                 .build();
                         factsWithClusterId.add(factWithClusterId);
                         ClusterProcessor.updateFactsTiming += System.currentTimeMillis() - startTime;
                     });
             factAdapter.appendFacts(factsWithClusterId, DbUtils.StorageMode.REPLACE);
-            log.debug("RoughClusterId calculation total timing: {}", ClusterProcessor.roughClusterCalcTiming);
+            factProcessed += batchSize;
+            log.debug("Facts processed {}", factProcessed);
+            log.debug("RoughClusterId calculation total timing: {}", ClusterProcessor.fingerprintCalcTiming);
             log.debug("Get WordForms total timing: {}", ClusterProcessor.getWordFormsTiming);
             log.debug("Finding close clusters total timing: {}", ClusterProcessor.findCloseClustersTiming);
             log.debug("Calculate clusterId total timing: {}", ClusterProcessor.calculateClusterIdTiming);
@@ -126,7 +111,7 @@ public class ClusterProcessor implements MessageListener {
         }
     }
 
-    boolean[] calculateFactFingerprint(Fact fact){
+    public boolean[] calculateFactFingerprint(Fact fact){
         long startTime = System.currentTimeMillis();
         List<Integer> stemIdsOfFact = wordFormAdapter.getStemIds(fact.getGolem(), textSplitter.splitWords(fact.getContent()));
         ClusterProcessor.getWordFormsTiming += System.currentTimeMillis() - startTime;
@@ -154,7 +139,7 @@ public class ClusterProcessor implements MessageListener {
                 factFingerprint[i] = true;
             }
         }
-        ClusterProcessor.roughClusterCalcTiming += System.currentTimeMillis() - startTime;
+        ClusterProcessor.fingerprintCalcTiming += System.currentTimeMillis() - startTime;
         return factFingerprint;
     }
 
@@ -188,7 +173,8 @@ public class ClusterProcessor implements MessageListener {
                 }
             }
         }
-        ClusterProcessor.calculateClusterIdTiming += System.currentTimeMillis() - startTime;
+        long duration = System.currentTimeMillis() - startTime;
+        ClusterProcessor.calculateClusterIdTiming += duration;
         return clusterId;
     }
 
@@ -198,11 +184,10 @@ public class ClusterProcessor implements MessageListener {
         int lenA = strToCompareA.length();
         int lenB = strToCompareB.length();
         if (Math.abs(lenA - lenB) / (float)(lenA + lenB) > 0.33){
-            return 100;
+            return 0;
         }
-        String lcs = StringUtils.allCommonSubstrings(strToCompareA, strToCompareB);
-        int sumLen = strToCompareA.length() + strToCompareB.length();
-        return Math.round(lcs.length() / (float)sumLen * 100);
+        int lcs = StringUtils.allCommonSubstringLength(strToCompareA, strToCompareB);
+        return Math.round((2 * lcs) / (float)(lenA + lenB) * 100);
     }
 
     int createNewCluster(Fact fact, int factFingerprint){
@@ -224,76 +209,15 @@ public class ClusterProcessor implements MessageListener {
     }
 
     public static List<Integer> getCloseFactsFingerprints(boolean[] factFingerPrint){
-        final int DISTANCE = 2;
-        List<Integer> fingerprints = new ArrayList<>(POSSIBLE_COMBINATIONS.get(Stem.SENSE_VECTOR_LENGTH).get(DISTANCE));
-        boolean[][] closeFingerprintsBool = getVectorsOnDistance(factFingerPrint, DISTANCE);
+        int qtyOfPossibleCombinations = (Stem.SENSE_VECTOR_LENGTH - COMPONENTS_IN_FINGERPRINT) * COMPONENTS_IN_FINGERPRINT;
+        List<Integer> fingerprints = new ArrayList<>(qtyOfPossibleCombinations);
+        // Add fingerprint itself
+        fingerprints.add(BitUtils.convertToInt(factFingerPrint));
+        // Add fingerprints of vectors on Hamming distance 2
+        boolean[][] closeFingerprintsBool = BitUtils.getVectorsOnDistance(factFingerPrint, qtyOfPossibleCombinations);
         for(boolean[] each: closeFingerprintsBool){
-            fingerprints.add(convertToInt(each));
+            fingerprints.add(BitUtils.convertToInt(each));
         }
         return fingerprints;
     }
-
-    public static boolean[][] getVectorsOnDistance(final boolean[] bits, final int distance){
-        boolean[][] result = new boolean[POSSIBLE_COMBINATIONS.get(Stem.SENSE_VECTOR_LENGTH).get(distance)][bits.length];
-        boolean[] modified = new boolean[bits.length];
-        System.arraycopy(bits, 0, modified, 0, bits.length);
-        allCombination(bits, 0, distance, modified, result, 0);
-        return result;
-    }
-
-    public static int allCombination(final boolean[] bits, int start, int r, boolean[] modified, boolean[][] result, int resCount) {
-        int length = bits.length;
-        if (r == 1) {
-            for (int i = start; i < length; i++) {
-                modified[i] = !bits[i];
-                System.arraycopy(modified, 0, result[resCount], 0, modified.length);
-                resCount++;
-                // swap bit back, because it's cheaper than copy unmodified array
-                modified[i] = bits[i];
-            }
-
-        } else {
-            for (int k = start; k < length - r + 1; k++) {
-                modified[k] = !bits[k];
-                resCount = allCombination(bits, k + 1, r - 1, modified, result, resCount);
-                // swap bit back, because it's cheaper than copy unmodified array
-                modified[k] = bits[k];
-            }
-        }
-        return resCount;
-    }
-
-    public static int getHammingDistance(boolean[] vec1, boolean[] vec2){
-        if (vec1.length != vec2.length){
-            throw new IllegalArgumentException("Vectors must be the same size");
-        }
-        int distance = 0;
-        for(int i = 0; i < vec1.length; i++){
-            if(vec1[i] != vec2[i]){
-                distance++;
-            }
-        }
-        return distance;
-    }
-
-    public static int convertToInt(final boolean[] bits) {
-        if (bits.length > 32) {
-            throw new IllegalArgumentException("Vector is too long. Vector size for int must be less than 32.");
-        }
-        int value = 0;
-        for (int i = 0; i < bits.length; ++i) {
-            value += bits[i] ? (1 << i) : 0;
-        }
-        return value;
-    }
-
-    public static String bitsToString(boolean[] bits){
-        String s = "";
-        for (boolean each:bits){
-            s += (each) ? "1" : "0";
-        }
-
-        return s;
-    }
-
 }

@@ -226,7 +226,7 @@ public class AmqpConfig {
         SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory());
         container.setQueues(clusterProcessorQueue());
         container.setMessageListener(clusterProcessor());
-        container.setMaxConcurrentConsumers(10);
+        //container.setMaxConcurrentConsumers(10);
         return container;
     }
 

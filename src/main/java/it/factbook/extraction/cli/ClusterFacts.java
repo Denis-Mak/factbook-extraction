@@ -1,38 +1,32 @@
 package it.factbook.extraction.cli;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.joda.JodaModule;
-import com.rabbitmq.client.AMQP.Queue.DeclareOk;
+import it.factbook.extraction.ClusterProcessor;
 import it.factbook.extraction.FactsMessage;
-import it.factbook.extraction.config.AmqpConfig;
 import it.factbook.extraction.config.ConfigPropertiesStaging;
 import it.factbook.search.Fact;
 import it.factbook.search.repository.FactAdapter;
 import it.factbook.util.DbUtils;
-import org.springframework.amqp.core.AmqpTemplate;
-import org.springframework.amqp.rabbit.core.RabbitAdmin;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 import javax.sql.DataSource;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  *
  */
 public class ClusterFacts {
-    private static RabbitAdmin admin;
-    private static ObjectMapper jsonMapper = new ObjectMapper();
-
+    private static final Logger log = LoggerFactory.getLogger(ClusterFacts.class);
+    private static int factProcessed                = 0;
 
     public static void main(String[] ars){
         ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(ConfigPropertiesStaging.class);
-        admin = context.getBean(RabbitAdmin.class);
         FactAdapter factAdapter = context.getBean(FactAdapter.class);
-        AmqpTemplate amqpTemplate = context.getBean(AmqpTemplate.class);
-        AmqpConfig amqpConfig = context.getBean(AmqpConfig.class);
+        ClusterProcessor clusterProcessor = context.getBean(ClusterProcessor.class);
         DataSource doccacheDataSource = (DataSource)context.getBean("doccacheDataSource");
         int batchSize;
         int i=0;
@@ -44,39 +38,38 @@ public class ClusterFacts {
         }
         do{
             FactsMessage factsMessage = new FactsMessage();
-            List<Fact> factBatch = factAdapter.getFactBatch(i*100,100);
+            List<Fact> factBatch = factAdapter.getFactBatch(i,1000);
             factsMessage.setFacts(factBatch);
             batchSize = factBatch.size();
             lastFactId = factBatch.get(batchSize - 1).getId();
             if (batchSize > 0) {
-                jsonMapper.registerModule(new JodaModule());
-                try {
-                    String json = jsonMapper.writeValueAsString(factsMessage);
-                    amqpTemplate.convertAndSend(amqpConfig.clusterProcessorExchange().getName(), "#", json);
-                } catch (JsonProcessingException e) {
-                    e.printStackTrace();
-                }
-                i++;
+                List<Fact> factsWithClusterId = new ArrayList<>(batchSize);
+                factBatch.parallelStream()
+                        .forEach(fact -> {
+                            boolean[] factFingerprintVector = clusterProcessor.calculateFactFingerprint(fact);
+                            int clusterId = 0;
+
+                            Fact factWithClusterId = new Fact.Builder(fact)
+                                    .clusterId(clusterId)
+                                    .factFingerprint(factFingerprintVector)
+                                    .build();
+                            factsWithClusterId.add(factWithClusterId);
+                        });
+                factAdapter.appendFacts(factsWithClusterId, DbUtils.StorageMode.REPLACE);
+                factProcessed += batchSize;
+                log.debug("Facts processed {}", factProcessed);
+                log.debug("FactFingerprint calculation total timing: {}", ClusterProcessor.fingerprintCalcTiming);
+
+                i = i + 1000;
             }
         } while (batchSize > 0);
         System.out.println("Last fact ID is " + lastFactId);
-        while (getQueueCount(amqpConfig.clusterProcessorQueue().getName()) > 0){
-            try {
-                Thread.sleep(10000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
+
         try {
             DbUtils.enableKeys(doccacheDataSource, "Fact");
         } catch (SQLException e) {
             e.printStackTrace();
         }
         System.out.println("Done!");
-    }
-
-    protected static int getQueueCount(final String name) {
-        DeclareOk declareOk = admin.getRabbitTemplate().execute(channel -> channel.queueDeclarePassive(name));
-        return declareOk.getMessageCount();
     }
 }
