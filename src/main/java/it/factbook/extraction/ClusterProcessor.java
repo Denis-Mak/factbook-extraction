@@ -3,6 +3,7 @@ package it.factbook.extraction;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
+import it.factbook.dictionary.Golem;
 import it.factbook.dictionary.Stem;
 import it.factbook.dictionary.repository.StemAdapter;
 import it.factbook.dictionary.repository.WordFormAdapter;
@@ -22,9 +23,7 @@ import org.springframework.amqp.core.MessageListener;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 /**
  *
@@ -114,24 +113,51 @@ public class ClusterProcessor implements MessageListener {
     public boolean[] calculateFactFingerprint(Fact fact){
         long startTime = System.currentTimeMillis();
         List<Integer> stemIdsOfFact = wordFormAdapter.getStemIds(fact.getGolem(), textSplitter.splitWords(fact.getContent()));
-        ClusterProcessor.getWordFormsTiming += System.currentTimeMillis() - startTime;
-        startTime = System.currentTimeMillis();
-        Component[] sumOfSenseVectors = new Component[Stem.SENSE_VECTOR_LENGTH];
-        int notNullStems = 0;
-        for (Integer stemId: stemIdsOfFact){
-            if (stemId != null){
-                double[] stemSenseVector = stemAdapter.getSenseVector(fact.getGolem(), stemId);
-                ClusterProcessor.sumVectors(sumOfSenseVectors, stemSenseVector);
-                notNullStems++;
-            }
-        }
-        if (notNullStems == 0) {
+        int stemsLen = stemIdsOfFact.size();
+        if (stemsLen < 2){
             return new boolean[0];
         }
-        Arrays.sort(sumOfSenseVectors, (e1, e2) -> Double.compare(e2.probability, e1.probability));
-        List<Integer> componentsOfFingerprint = new ArrayList<>(COMPONENTS_IN_FINGERPRINT);
-        for (int i = 0; i < COMPONENTS_IN_FINGERPRINT; i++){
-            componentsOfFingerprint.add(sumOfSenseVectors[i].pos);
+        ClusterProcessor.getWordFormsTiming += System.currentTimeMillis() - startTime;
+        startTime = System.currentTimeMillis();
+        int[][] senceOfBigram = new int[stemsLen-1][2];
+        for (int i = 0; i < stemsLen - 1; i++){
+            Integer stemId = stemIdsOfFact.get(i);
+            Integer nextStemId = stemIdsOfFact.get(i+1);
+            if (stemId != null && nextStemId != null) {
+                senceOfBigram[i][0] = getKeyComponent(fact.getGolem(), stemId, nextStemId);
+                if (i < stemsLen - 2){
+                    Integer afterNextStemId = stemIdsOfFact.get(i+2);
+                    if (afterNextStemId != null) {
+                        senceOfBigram[i][1] = getKeyComponent(fact.getGolem(), stemId, afterNextStemId);
+                    } else {
+                        senceOfBigram[i][1] = -1;
+                    }
+                }
+            } else {
+                senceOfBigram[i][0] = -1;
+            }
+        }
+        Set<Integer> componentsOfFingerprint = new HashSet<>(stemsLen-1);
+        for(int i = 0; i < senceOfBigram.length - 1; i++){
+            int[] components = senceOfBigram[i];
+            int[] componentsNext = senceOfBigram[i+1];
+            for (int component : components) {
+                for (int componentNext : componentsNext) {
+                    if (component == componentNext && component > 0) {
+                        componentsOfFingerprint.add(component);
+                    }
+                }
+            }
+            if (i < senceOfBigram.length - 2){
+                int[] componentsAfterNext = senceOfBigram[i+2];
+                for (int component : components) {
+                    for (int componentAfterNext : componentsAfterNext) {
+                        if (component == componentAfterNext && component > 0) {
+                            componentsOfFingerprint.add(component);
+                        }
+                    }
+                }
+            }
         }
         boolean[] factFingerprint = new boolean[Stem.SENSE_VECTOR_LENGTH];
         for (int i = 0; i < Stem.SENSE_VECTOR_LENGTH; i++){
@@ -143,7 +169,16 @@ public class ClusterProcessor implements MessageListener {
         return factFingerprint;
     }
 
+    private int getKeyComponent(Golem golem, int stemIdA, int stemIdB){
+        Component[] stemSenseSum = new Component[Stem.SENSE_VECTOR_LENGTH];
+        ClusterProcessor.sumVectors(stemSenseSum, stemAdapter.getSenseVector(golem, stemIdA));
+        ClusterProcessor.sumVectors(stemSenseSum, stemAdapter.getSenseVector(golem, stemIdB));
+        Arrays.sort(stemSenseSum, (e1, e2) -> Double.compare(e2.probability, e1.probability));
+        return stemSenseSum[0].pos;
+    }
+
     private static void sumVectors(Component[] a, double[] b) {
+        int tr = 0;
         for (int i = 0; i < b.length; i++){
             Component c   = new Component();
             c.pos         = i;

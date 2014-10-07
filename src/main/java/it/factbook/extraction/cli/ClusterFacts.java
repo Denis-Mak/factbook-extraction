@@ -5,6 +5,7 @@ import it.factbook.extraction.FactsMessage;
 import it.factbook.extraction.config.ConfigPropertiesStaging;
 import it.factbook.search.Fact;
 import it.factbook.search.repository.FactAdapter;
+import it.factbook.util.BitUtils;
 import it.factbook.util.DbUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,7 +13,6 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 import javax.sql.DataSource;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,20 +29,20 @@ public class ClusterFacts {
         ClusterProcessor clusterProcessor = context.getBean(ClusterProcessor.class);
         DataSource doccacheDataSource = (DataSource)context.getBean("doccacheDataSource");
         int batchSize;
-        int i=0;
+        int i=51710340;
         long lastFactId = 0;
-        try {
+        /*try {
             DbUtils.disableKeys(doccacheDataSource, "Fact");
         } catch (SQLException e) {
             e.printStackTrace();
-        }
-        do{
+        }*/
+        //do{
             FactsMessage factsMessage = new FactsMessage();
-            List<Fact> factBatch = factAdapter.getFactBatch(i,1000);
+            List<Fact> factBatch = factAdapter.getFactBatch(i,1);
             factsMessage.setFacts(factBatch);
             batchSize = factBatch.size();
-            lastFactId = factBatch.get(batchSize - 1).getId();
             if (batchSize > 0) {
+                lastFactId = factBatch.get(batchSize - 1).getId();
                 List<Fact> factsWithClusterId = new ArrayList<>(batchSize);
                 factBatch.parallelStream()
                         .forEach(fact -> {
@@ -50,7 +50,7 @@ public class ClusterFacts {
                             int clusterId = 0;
 
                             Fact factWithClusterId = new Fact.Builder(fact)
-                                    .clusterId(clusterId)
+                                    .clusterId(BitUtils.convertToInt(factFingerprintVector))
                                     .factFingerprint(factFingerprintVector)
                                     .build();
                             factsWithClusterId.add(factWithClusterId);
@@ -62,14 +62,14 @@ public class ClusterFacts {
 
                 i = i + 1000;
             }
-        } while (batchSize > 0);
+        //} while (batchSize > 0);
         System.out.println("Last fact ID is " + lastFactId);
 
-        try {
+        /*try {
             DbUtils.enableKeys(doccacheDataSource, "Fact");
         } catch (SQLException e) {
             e.printStackTrace();
-        }
+        }*/
         System.out.println("Done!");
     }
 }
