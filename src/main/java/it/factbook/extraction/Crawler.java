@@ -3,6 +3,8 @@ package it.factbook.extraction;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.factbook.extraction.config.AmqpConfig;
+import it.factbook.extraction.message.DocumentMessage;
+import it.factbook.extraction.message.SearchResultsMessage;
 import it.factbook.extraction.util.WebHelper;
 import org.apache.tika.Tika;
 import org.apache.tika.exception.TikaException;

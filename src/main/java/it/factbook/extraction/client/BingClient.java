@@ -2,8 +2,8 @@ package it.factbook.extraction.client;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import it.factbook.extraction.Link;
-import it.factbook.extraction.ProfileMessage;
-import it.factbook.extraction.SearchResultsMessage;
+import it.factbook.extraction.message.ProfileMessage;
+import it.factbook.extraction.message.SearchResultsMessage;
 import it.factbook.extraction.util.WebHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,7 +62,7 @@ public class BingClient extends AbstractSearchEngineClient implements MessageLis
             Iterator<JsonNode> itr = results.elements();
             while (itr.hasNext()) {
                 JsonNode res = itr.next();
-                links.add(new Link( res.path("Url").textValue(),
+                links.add(new Link(res.path("Url").textValue(),
                         res.path("Title").textValue(),
                         res.path("Description").textValue(),
                         query.golem));

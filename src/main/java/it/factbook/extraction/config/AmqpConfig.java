@@ -1,9 +1,6 @@
 package it.factbook.extraction.config;
 
-import it.factbook.extraction.ClusterProcessor;
-import it.factbook.extraction.Crawler;
-import it.factbook.extraction.FactSaver;
-import it.factbook.extraction.IndexUpdater;
+import it.factbook.extraction.*;
 import it.factbook.extraction.client.BingClient;
 import it.factbook.extraction.client.FarooClient;
 import it.factbook.extraction.client.GoogleClient;
@@ -14,6 +11,7 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
+import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -139,7 +137,7 @@ public class AmqpConfig {
 
     @Bean
     Binding bindingYahoo() {
-        return bind(yahooQueue()).to(searchExtractionExchange()).with("YAHOOO");
+        return bind(yahooQueue()).to(searchExtractionExchange()).with("*");
     }
 
     @Bean
@@ -209,31 +207,6 @@ public class AmqpConfig {
     MessageListener factSaver(){return new FactSaver();}
 
     // ////////////
-    // Cluster processor
-    @Bean
-    public Queue clusterProcessorQueue() {return new Queue("facts-to-cluster-query");}
-
-    @Bean
-    public FanoutExchange clusterProcessorExchange(){
-        return new FanoutExchange("facts-exchange");
-    }
-
-    @Bean
-    Binding bindingClusterProcessor(){return bind(clusterProcessorQueue()).to(clusterProcessorExchange());}
-
-    @Bean
-    SimpleMessageListenerContainer clusterProcessorContainer(){
-        SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory());
-        container.setQueues(clusterProcessorQueue());
-        container.setMessageListener(clusterProcessor());
-        //container.setMaxConcurrentConsumers(10);
-        return container;
-    }
-
-    @Bean
-    MessageListener clusterProcessor(){return new ClusterProcessor();}
-
-    // ////////////
     //IndexUpdater
     @Bean
     public static Queue indexUpdaterQueue() {return new Queue("facts-add-to-index-query");}
@@ -256,4 +229,22 @@ public class AmqpConfig {
 
     @Bean
     MessageListener indexUpdater(){return new IndexUpdater();}
+
+    //////////////////////
+    // RPC Update profile
+    @Bean
+    SimpleMessageListenerContainer profileUpdaterRpcContainer(){
+        SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory());
+        container.setQueues(rpcQueue());
+        container.setMessageListener(new MessageListenerAdapter(profileUpdaterMsgHandler(), "handleMessage"));
+        return container;
+    }
+
+    @Bean
+    public Queue rpcQueue() {
+        return new Queue("rpc-queue");
+    }
+
+    @Bean
+    public ProfileUpdaterMsgHandler profileUpdaterMsgHandler() {return new ProfileUpdaterMsgHandler();}
 }

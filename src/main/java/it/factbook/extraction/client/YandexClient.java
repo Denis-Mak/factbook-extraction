@@ -2,8 +2,8 @@ package it.factbook.extraction.client;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import it.factbook.extraction.Link;
-import it.factbook.extraction.ProfileMessage;
-import it.factbook.extraction.SearchResultsMessage;
+import it.factbook.extraction.message.ProfileMessage;
+import it.factbook.extraction.message.SearchResultsMessage;
 import it.factbook.extraction.util.WebHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

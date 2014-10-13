@@ -3,6 +3,7 @@ package it.factbook.extraction;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
 import it.factbook.dictionary.Golem;
+import it.factbook.extraction.message.FactsMessage;
 import it.factbook.search.repository.DocumentRepositoryConfig;
 import it.factbook.sphinx.SphinxIndexUpdater;
 import org.slf4j.Logger;

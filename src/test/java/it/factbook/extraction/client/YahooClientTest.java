@@ -25,6 +25,6 @@ public class YahooClientTest {
     @Ignore
     public void testGetLinks() throws Exception {
         List<Link> links = yahooClient.getLinks(new Query(Golem.WIKI_EN, "iphone"));
-        assertEquals(10, links.size());
+        assertEquals(50, links.size());
     }
 }

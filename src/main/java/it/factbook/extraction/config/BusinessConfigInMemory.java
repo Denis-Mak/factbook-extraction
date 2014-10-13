@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Configuration;
  *
  */
 @Configuration
-public class BusinessConfigStaging extends BusinessConfig {
+public class BusinessConfigInMemory extends BusinessConfig {
     @Override
     @Bean
     public StemAdapter stemAdapter(){

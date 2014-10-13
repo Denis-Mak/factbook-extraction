@@ -8,9 +8,9 @@ import it.factbook.dictionary.repository.StemAdapter;
 import it.factbook.dictionary.repository.WordFormAdapter;
 import it.factbook.dictionary.repository.jdbc.StemAdapterJdbcImpl;
 import it.factbook.dictionary.repository.jdbc.WordFormAdapterJdbcImpl;
-import it.factbook.extraction.ClusterProcessor;
 import it.factbook.extraction.CrawlerLog;
-import it.factbook.search.DocumentToFactSplitter;
+import it.factbook.search.FactProcessor;
+import it.factbook.search.SearchProfileUpdater;
 import it.factbook.search.repository.ClusterAdapter;
 import it.factbook.search.repository.DocumentRepositoryConfig;
 import it.factbook.search.repository.FactAdapter;
@@ -119,7 +119,7 @@ public class BusinessConfig {
 
     //Helper beans
     @Bean
-    public DocumentToFactSplitter documentToFactSplitter(){return new DocumentToFactSplitter();}
+    public FactProcessor factProcessor(){return new FactProcessor();}
 
     @Bean
     public FactAdapter factAdapter() {return new FactAdapterJdbcImpl();}
@@ -151,5 +151,5 @@ public class BusinessConfig {
     public TreeParser treeParser() {return new TreeParser();}
 
     @Bean
-    public ClusterProcessor clusterProcessor() {return new ClusterProcessor();}
+    public SearchProfileUpdater profileUpdater() {return new SearchProfileUpdater();}
 }

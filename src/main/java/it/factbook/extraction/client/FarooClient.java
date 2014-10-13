@@ -2,17 +2,17 @@ package it.factbook.extraction.client;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import it.factbook.dictionary.Golem;
-import it.factbook.extraction.Link;
-import it.factbook.extraction.ProfileMessage;
-import it.factbook.extraction.SearchResultsMessage;
 import it.factbook.dictionary.WordForm;
+import it.factbook.extraction.Link;
+import it.factbook.extraction.message.ProfileMessage;
+import it.factbook.extraction.message.SearchResultsMessage;
+import it.factbook.extraction.util.WebHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import it.factbook.extraction.util.WebHelper;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -88,10 +88,10 @@ public class FarooClient extends AbstractSearchEngineClient implements MessageLi
             Iterator<JsonNode> itr = results.elements();
             while (itr.hasNext()) {
                 JsonNode res = itr.next();
-                links.add(new Link( res.path("url").textValue(),
-                                    res.path("title").textValue(),
-                                    res.path("kwic").textValue(),
-                                    query.golem));
+                links.add(new Link(res.path("url").textValue(),
+                        res.path("title").textValue(),
+                        res.path("kwic").textValue(),
+                        query.golem));
             }
         } catch (IOException e) {
             e.printStackTrace();

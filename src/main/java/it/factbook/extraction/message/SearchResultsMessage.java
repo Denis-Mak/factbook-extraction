@@ -1,5 +1,6 @@
-package it.factbook.extraction;
+package it.factbook.extraction.message;
 
+import it.factbook.extraction.Link;
 import it.factbook.extraction.client.SearchEngine;
 
 import java.util.List;

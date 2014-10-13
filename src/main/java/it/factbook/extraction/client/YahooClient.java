@@ -2,8 +2,8 @@ package it.factbook.extraction.client;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import it.factbook.extraction.Link;
-import it.factbook.extraction.ProfileMessage;
-import it.factbook.extraction.SearchResultsMessage;
+import it.factbook.extraction.message.ProfileMessage;
+import it.factbook.extraction.message.SearchResultsMessage;
 import it.factbook.extraction.util.WebHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,13 +63,13 @@ public class YahooClient extends AbstractSearchEngineClient implements MessageLi
         List<Link> links = new ArrayList<>(50);
         try {
             JsonNode root = jsonMapper.readTree(WebHelper.getContentOAuth(buildUrl(query), clientKey, clientSecret));
-            JsonNode results = root.path("items");
+            JsonNode results = root.path("bossresponse").path("web").path("results");
             Iterator<JsonNode> itr = results.elements();
             while (itr.hasNext()) {
                 JsonNode res = itr.next();
-                links.add(new Link( res.path("link").textValue(),
+                links.add(new Link(res.path("url").textValue(),
                         res.path("title").textValue(),
-                        res.path("snippet").textValue(),
+                        res.path("abstract").textValue(),
                         query.golem));
             }
         } catch (IOException e) {

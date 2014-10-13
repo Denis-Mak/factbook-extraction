@@ -1,4 +1,4 @@
-package it.factbook.extraction;
+package it.factbook.extraction.message;
 
 import it.factbook.search.Fact;
 

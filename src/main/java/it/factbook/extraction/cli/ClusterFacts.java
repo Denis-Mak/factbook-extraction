@@ -1,9 +1,9 @@
 package it.factbook.extraction.cli;
 
-import it.factbook.extraction.ClusterProcessor;
-import it.factbook.extraction.FactsMessage;
+import it.factbook.extraction.message.FactsMessage;
 import it.factbook.extraction.config.ConfigPropertiesStaging;
 import it.factbook.search.Fact;
+import it.factbook.search.FactProcessor;
 import it.factbook.search.repository.FactAdapter;
 import it.factbook.util.BitUtils;
 import it.factbook.util.DbUtils;
@@ -26,7 +26,7 @@ public class ClusterFacts {
     public static void main(String[] ars){
         ConfigurableApplicationContext context = new AnnotationConfigApplicationContext(ConfigPropertiesStaging.class);
         FactAdapter factAdapter = context.getBean(FactAdapter.class);
-        ClusterProcessor clusterProcessor = context.getBean(ClusterProcessor.class);
+        FactProcessor factProcessor = context.getBean(FactProcessor.class);
         DataSource doccacheDataSource = (DataSource)context.getBean("doccacheDataSource");
         int batchSize;
         int i=51710340;
@@ -46,7 +46,7 @@ public class ClusterFacts {
                 List<Fact> factsWithClusterId = new ArrayList<>(batchSize);
                 factBatch.parallelStream()
                         .forEach(fact -> {
-                            boolean[] factFingerprintVector = clusterProcessor.calculateFactFingerprint(fact);
+                            boolean[] factFingerprintVector = factProcessor.calculateFactFingerprint(fact);
                             int clusterId = 0;
 
                             Fact factWithClusterId = new Fact.Builder(fact)
@@ -58,7 +58,6 @@ public class ClusterFacts {
                 factAdapter.appendFacts(factsWithClusterId, DbUtils.StorageMode.REPLACE);
                 factProcessed += batchSize;
                 log.debug("Facts processed {}", factProcessed);
-                log.debug("FactFingerprint calculation total timing: {}", ClusterProcessor.fingerprintCalcTiming);
 
                 i = i + 1000;
             }

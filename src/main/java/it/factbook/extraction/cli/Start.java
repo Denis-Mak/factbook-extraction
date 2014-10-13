@@ -1,4 +1,4 @@
-package it.factbook.extraction;
+package it.factbook.extraction.cli;
 
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.daemon.Daemon;

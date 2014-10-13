@@ -1,6 +1,7 @@
-package it.factbook.extraction;
+package it.factbook.extraction.message;
 
 import it.factbook.dictionary.Golem;
+import it.factbook.extraction.Link;
 
 /**
  *
@@ -11,11 +12,11 @@ public class DocumentMessage {
     private String content;
     private Golem golem;
 
-    DocumentMessage(){
+    public DocumentMessage(){
 
     }
 
-    DocumentMessage(Link link, String content){
+    public DocumentMessage(Link link, String content){
         this.content    = content;
         this.title      = link.getTitle();
         this.url        = link.getUrl();

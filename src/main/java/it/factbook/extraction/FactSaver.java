@@ -3,11 +3,13 @@ package it.factbook.extraction;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
-import it.factbook.extraction.config.AmqpConfig;
-import it.factbook.search.DocumentToFactSplitter;
-import it.factbook.search.Fact;
-import it.factbook.search.repository.FactAdapter;
 import it.factbook.dictionary.LangDetector;
+import it.factbook.extraction.config.AmqpConfig;
+import it.factbook.extraction.message.DocumentMessage;
+import it.factbook.extraction.message.FactsMessage;
+import it.factbook.search.Fact;
+import it.factbook.search.FactProcessor;
+import it.factbook.search.repository.FactAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.AmqpTemplate;
@@ -30,7 +32,7 @@ public class FactSaver implements MessageListener{
     private static final Logger log = LoggerFactory.getLogger(FactSaver.class);
 
     @Autowired
-    DocumentToFactSplitter documentToFactSplitter;
+    FactProcessor factProcessor;
 
     @Autowired
     FactAdapter factAdapter;
@@ -57,13 +59,13 @@ public class FactSaver implements MessageListener{
         log.debug("Received message. Document URL: {} \n Document title: {}", msg.getUrl(), msg.getTitle());
         Fact documentHeader = new Fact.Builder()
                 .title(msg.getTitle())
-                .titleSense(documentToFactSplitter.convertToSense(documentToFactSplitter.splitWords(msg.getTitle()), msg.getGolem()))
+                .titleSense(factProcessor.convertToSense(factProcessor.splitWords(msg.getTitle()), msg.getGolem()))
                 .docUrl(msg.getUrl())
                 .docLang(langDetector.detectLanguage(msg.getContent()))
                 .golem(msg.getGolem()).build();
         long docId = factAdapter.saveDocumentHeader(documentHeader);
         factAdapter.saveDocumentContent(docId, msg.getContent());
-        List<Fact> facts = documentToFactSplitter.splitDocument(msg.getContent(), docId, msg.getGolem());
+        List<Fact> facts = factProcessor.splitDocument(msg.getContent(), docId, msg.getGolem());
         factAdapter.appendFacts(facts);
         List<Fact> factsWithId = factAdapter.getByDocId(docId);
         List<Fact> factsWithDocHeader = factsWithId.stream()
@@ -85,7 +87,7 @@ public class FactSaver implements MessageListener{
         try {
             jsonMapper.registerModule(new JodaModule());
             String json = jsonMapper.writeValueAsString(factsMessage);
-            amqpTemplate.convertAndSend(amqpConfig.clusterProcessorExchange().getName(), "#", json);
+            amqpTemplate.convertAndSend(AmqpConfig.indexUpdaterExchange().getName(), "#", json);
         } catch (JsonProcessingException e) {
             log.error("Error converting FactMessage: {}", e);
         }

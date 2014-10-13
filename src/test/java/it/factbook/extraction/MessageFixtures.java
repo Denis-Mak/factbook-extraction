@@ -1,6 +1,7 @@
 package it.factbook.extraction;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import it.factbook.extraction.message.ProfileMessage;
 
 import java.io.IOException;
 
