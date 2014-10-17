@@ -76,6 +76,7 @@ public class FactSaver implements MessageListener{
                         .factLang(f.getFactLang())
                         .docId(f.getDocId())
                         .docPosition(f.getDocPosition())
+                        .factFingerprint(f.getFactFingerprint())
                         .build())
                 .collect(Collectors.toList());
         FactsMessage factsMessage = new FactsMessage();
