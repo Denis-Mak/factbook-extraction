@@ -1,21 +1,27 @@
 package it.factbook.extraction;
 
+import it.factbook.extraction.config.ConfigPropertiesTest;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.support.AnnotationConfigContextLoader;
 
 import java.io.IOException;
 
 import static org.junit.Assert.assertTrue;
 
-
+@RunWith(SpringJUnit4ClassRunner.class)
+@ContextConfiguration(classes= ConfigPropertiesTest.class, loader=AnnotationConfigContextLoader.class)
 public class CrawlerTest {
     private static Crawler crawler = new Crawler();
 
     @Test
     public void testDownloadArticle() throws Exception {
-        String text =  crawler.downloadArticle("http://www.huffingtonpost.com/2013/08/30/best-sleep-apps_n_3691693.html");
-        //String text = crawler.downloadArticle("http://msk-tour.com/chto-interesnogo/item/улица-варварка-2");
-        assertTrue(text.length() > 1000);
-        assertTrue(text.indexOf("The pzizz app") > 0);
+        String text =  crawler.downloadArticle("http://www.factsearch.ru/");
+        //String text = crawler.downloadArticle("http://uchebnikionline.com/istoria/novitnya_istoriya_krayin_zahidnoyi_yevropi_ta_pivnichnoyi_ameriki_-_baran_3a/zahidna_yevropa_pivnichna_amerika_osoblivosti_rozvitku.htm");
+        assertTrue(text.length() > 500);
+        assertTrue(text.indexOf("Collect facts") > 0);
     }
 
     @Test

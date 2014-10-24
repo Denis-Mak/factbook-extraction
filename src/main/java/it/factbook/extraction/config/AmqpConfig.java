@@ -199,11 +199,11 @@ public class AmqpConfig {
         SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory());
         container.setQueues(factSaverQueue());
         container.setMessageListener(factSaver());
-        container.setMaxConcurrentConsumers(10);
+    //    container.setMaxConcurrentConsumers(10);
         return container;
     }
 
-    @Bean
+    @Bean (name = "factSaver")
     MessageListener factSaver(){return new FactSaver();}
 
     // ////////////

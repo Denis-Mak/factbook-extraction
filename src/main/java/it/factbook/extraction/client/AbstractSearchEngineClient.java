@@ -63,7 +63,9 @@ public abstract class AbstractSearchEngineClient {
                 for (WordForm word : wordgram) {
                     sj.add(word.getWord());
                 }
-                wordgramQueries.add(new Query(wordgram.get(0).getGolem(), sj.toString()));
+                if (wordgram.get(0).getGolem() != Golem.UNKNOWN) {
+                    wordgramQueries.add(new Query(wordgram.get(0).getGolem(), sj.toString()));
+                }
                 sj = new StringJoiner(" | ","(", ")");
             }
         }

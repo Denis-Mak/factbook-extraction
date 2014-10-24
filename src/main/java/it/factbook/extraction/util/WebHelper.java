@@ -10,14 +10,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.HttpsURLConnection;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.Authenticator;
-import java.net.HttpURLConnection;
-import java.net.PasswordAuthentication;
-import java.net.URL;
+import java.io.*;
+import java.net.*;
 
 /**
  *
@@ -116,5 +110,35 @@ public class WebHelper {
         InputStream is = responseCode==200?c.getInputStream():c.getErrorStream();
 
         return TikaInputStream.get(is);
+    }
+
+    public static String getDecodedURL(String url){
+        try {
+            String decodedUrl = URLDecoder.decode(url, "UTF-8");
+            int startDecodedPart = getStartDecodedPart(url, decodedUrl);
+            if (startDecodedPart > -1 && Character.isLetterOrDigit(decodedUrl.charAt(startDecodedPart))) {
+                return decodedUrl;
+            } else {
+                return url;
+            }
+        } catch (UnsupportedEncodingException | IllegalArgumentException e){
+            return url;
+        }
+    }
+
+    private static int getStartDecodedPart(String rawUrl, String decodedUrl){
+        int i = 0;
+        char[] rawUrlArr = rawUrl.toCharArray();
+        char[] decodedUrlArr = decodedUrl.toCharArray();
+        for (; i < decodedUrl.length(); i++){
+            if (rawUrlArr[i] != decodedUrlArr[i]) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    public static String removeTags(String str){
+        return str.replaceAll("<[^>]*>", "");
     }
 }

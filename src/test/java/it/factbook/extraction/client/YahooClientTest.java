@@ -2,6 +2,7 @@ package it.factbook.extraction.client;
 
 import it.factbook.dictionary.Golem;
 import it.factbook.extraction.Link;
+import it.factbook.extraction.MessageFixtures;
 import it.factbook.extraction.config.ConfigPropertiesTest;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -24,7 +25,15 @@ public class YahooClientTest {
     @Test
     @Ignore
     public void testGetLinks() throws Exception {
-        List<Link> links = yahooClient.getLinks(new Query(Golem.WIKI_EN, "iphone"));
+        List<Link> links = yahooClient.getLinks(new Query(Golem.WIKI_RU, "+mobile ios iphone OR +mobile power consumption"));
         assertEquals(50, links.size());
+    }
+
+    @Test
+    public void testGetQueries(){
+        List<Query> queries = yahooClient.getQueries(MessageFixtures.profileMessage);
+        assertEquals(2, queries.size());
+        assertEquals("+mobile телефон эпл", queries.get(0).query);
+        assertEquals("+mobile ios iphone OR +mobile power consumption", queries.get(1).query);
     }
 }

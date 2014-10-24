@@ -5,9 +5,6 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
-
 /**
  *
  */
@@ -22,11 +19,7 @@ public class Link {
     public Link(){}
 
     public Link (String url, String title, String snippet, Golem golem){
-        try {
-            this.url = URLDecoder.decode(url, "UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            log.error("Exception in URL encoding, URL: {}", url, e);
-        }
+        this.url        = url;
         this.urlHash    = DigestUtils.sha1Hex(this.url);
         this.title      = title;
         this.snippet    = snippet;
@@ -42,11 +35,7 @@ public class Link {
     }
 
     public void setUrl(String url) {
-        try {
-            this.url = URLDecoder.decode(url, "UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            log.error("Exception in URL encoding, URL: {}", url, e);
-        }
+        this.url = url;
     }
 
     public String getTitle() {

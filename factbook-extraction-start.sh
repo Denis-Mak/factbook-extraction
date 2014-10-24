@@ -11,13 +11,13 @@ EXEC="/usr/bin/jsvc"
 FILE_PATH="/usr/local/$NAME"
 
 # The path to the folder containing the java runtime
-JAVA_HOME="/usr/java/jdk1.8.0_11/"
+JAVA_HOME="/usr/java/jdk1.8.0/"
 
 # Our classpath including our jar file and the Apache Commons Daemon library
 CLASS_PATH="$FILE_PATH/factbook-it.factbook.extraction-1.0-SNAPSHOT.jar"
 
 # The fully qualified name of the class to execute
-CLASS="it.factbook.extraction.Start"
+CLASS="it.factbook.extraction.cli.Start"
 
 # Any command line arguments to be passed to the our Java Daemon implementations init() method
 ARGS=""

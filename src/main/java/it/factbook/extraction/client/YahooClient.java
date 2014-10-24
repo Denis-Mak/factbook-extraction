@@ -1,6 +1,8 @@
 package it.factbook.extraction.client;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import it.factbook.dictionary.Golem;
+import it.factbook.dictionary.WordForm;
 import it.factbook.extraction.Link;
 import it.factbook.extraction.message.ProfileMessage;
 import it.factbook.extraction.message.SearchResultsMessage;
@@ -15,9 +17,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 /**
  *
@@ -59,16 +59,59 @@ public class YahooClient extends AbstractSearchEngineClient implements MessageLi
         }
     }
 
+    @Override
+    protected List<Query> getQueries(ProfileMessage profileMessage) {
+        int WORDGRAMS_IN_ONE_QUERY = 5;
+        List<Query> wordgramQueries = new ArrayList<>();
+        String initialQuery =
+                (profileMessage.getInitialQuery() != null && profileMessage.getInitialQuery().length() > 0) ?
+                        "+" + profileMessage.getInitialQuery() + " " : "";
+        StringJoiner sj = new StringJoiner(" ", initialQuery, " OR ");
+        for (List<List<WordForm>> line: profileMessage.getQueryLines()){
+            for(List<WordForm> wordgram: line){
+                for (WordForm word : wordgram) {
+                    sj.add(word.getWord());
+                }
+                if (wordgram.get(0).getGolem() != Golem.UNKNOWN) {
+                    wordgramQueries.add(new Query(wordgram.get(0).getGolem(), sj.toString()));
+                }
+                sj = new StringJoiner(" ", initialQuery, " OR ");
+            }
+        }
+        Collections.sort(wordgramQueries, (q1, q2) -> q1.golem.getId() - q2.golem.getId());
+        List<Query> queries = new ArrayList<>();
+        int wordgramCounter = 0;
+        Golem golem = Golem.UNKNOWN;
+
+        String queryStr = "";
+        for (Query each:wordgramQueries){
+            if (wordgramCounter == 0) golem = each.golem;
+            if (each.golem != golem || wordgramCounter >= WORDGRAMS_IN_ONE_QUERY){
+                wordgramCounter = 0;
+                queries.add(new Query(golem, queryStr.substring(0, queryStr.length()-4)));
+                queryStr = "";
+                golem = each.golem;
+            }
+
+            wordgramCounter++;
+            queryStr += each.query;
+        }
+        queries.add(new Query(golem, queryStr.substring(0, queryStr.length()-4)));
+
+        return queries;
+    }
+
     List<Link> getLinks(Query query){
         List<Link> links = new ArrayList<>(50);
         try {
-            JsonNode root = jsonMapper.readTree(WebHelper.getContentOAuth(buildUrl(query), clientKey, clientSecret));
-            JsonNode results = root.path("bossresponse").path("web").path("results");
+            String response = WebHelper.getContentOAuth(buildUrl(query), clientKey, clientSecret);
+            JsonNode root = jsonMapper.readTree(response);
+            JsonNode results = root.path("bossresponse").path("limitedweb").path("results");
             Iterator<JsonNode> itr = results.elements();
             while (itr.hasNext()) {
                 JsonNode res = itr.next();
                 links.add(new Link(res.path("url").textValue(),
-                        res.path("title").textValue(),
+                        WebHelper.removeTags(res.path("title").textValue()),
                         res.path("abstract").textValue(),
                         query.golem));
             }
@@ -82,12 +125,12 @@ public class YahooClient extends AbstractSearchEngineClient implements MessageLi
     private String buildUrl(Query query){
         String encQuery = null;
         try {
-            encQuery = URLEncoder.encode(query.query, "UTF-8");
+            encQuery = URLEncoder.encode(query.query, "UTF-8").replace("+", "%20");
         } catch (UnsupportedEncodingException e) {
             log.error("Unsupported Encoding!");
         }
 
-        return "https://yboss.yahooapis.com/ysearch/web?q=" + encQuery;
+        return "https://yboss.yahooapis.com/ysearch/limitedweb?q=" + encQuery;
                 //"&view=" + query.golem.getMainLang().getCode().toLowerCase() +
                 //"&key=" + clientKey +
                 //"&format=json";

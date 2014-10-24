@@ -7,9 +7,11 @@ import it.factbook.dictionary.LangDetector;
 import it.factbook.extraction.config.AmqpConfig;
 import it.factbook.extraction.message.DocumentMessage;
 import it.factbook.extraction.message.FactsMessage;
+import it.factbook.extraction.util.WebHelper;
 import it.factbook.search.Fact;
 import it.factbook.search.FactProcessor;
 import it.factbook.search.repository.FactAdapter;
+import it.factbook.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.AmqpTemplate;
@@ -19,6 +21,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -47,26 +51,23 @@ public class FactSaver implements MessageListener{
     private LangDetector langDetector;
 
     @Override
-    public void onMessage(Message message) {
+    public void onMessage(Message jsonMsg) {
         DocumentMessage msg = new DocumentMessage();
         try {
-            msg = jsonMapper.readValue(message.getBody(), DocumentMessage.class);
-            msg.setContent(msg.getContent().replaceAll("\\p{C}", ""));   // remove all special chars
+            msg = jsonMapper.readValue(jsonMsg.getBody(), DocumentMessage.class);
+            if (msg.getContent() == null || msg.getContent().length() < 1){
+                log.warn("Received empty message. URL: {} Title: {}", msg.getUrl(), msg.getTitle());
+            }
+            msg.setContent(removeHyphens(StringUtils.removeControlCharacters(msg.getContent())));   // remove all special chars
         } catch (IOException e) {
-            log.error("Error during unpack DocumentMessage: {}", e);
+            log.error("Error during unpack DocumentMessage: ", e);
         }
 
-        log.debug("Received message. Document URL: {} \n Document title: {}", msg.getUrl(), msg.getTitle());
-        Fact documentHeader = new Fact.Builder()
-                .title(msg.getTitle())
-                .titleSense(factProcessor.convertToSense(factProcessor.splitWords(msg.getTitle()), msg.getGolem()))
-                .docUrl(msg.getUrl())
-                .docLang(langDetector.detectLanguage(msg.getContent()))
-                .golem(msg.getGolem()).build();
+        log.debug("Received message. URL: {} \n Title: {}", msg.getUrl(), msg.getTitle());
+        Fact documentHeader = buildDocHeader(msg);
         long docId = factAdapter.saveDocumentHeader(documentHeader);
         factAdapter.saveDocumentContent(docId, msg.getContent());
-        List<Fact> facts = factProcessor.splitDocument(msg.getContent(), docId, msg.getGolem());
-        factAdapter.appendFacts(facts);
+        factAdapter.appendFacts(buildListOfFacts(docId, msg));
         List<Fact> factsWithId = factAdapter.getByDocId(docId);
         List<Fact> factsWithDocHeader = factsWithId.stream()
                 .map(f -> new Fact.Builder(documentHeader)
@@ -90,7 +91,44 @@ public class FactSaver implements MessageListener{
             String json = jsonMapper.writeValueAsString(factsMessage);
             amqpTemplate.convertAndSend(AmqpConfig.indexUpdaterExchange().getName(), "#", json);
         } catch (JsonProcessingException e) {
-            log.error("Error converting FactMessage: {}", e);
+            log.error("Error converting FactMessage: ", e);
         }
+    }
+
+    static String removeHyphens(String str){
+        if (str == null){
+            return null;
+        }
+        char[] buf = new char[str.length()];
+        int i = 0;
+        for (char each:str.toCharArray()) {
+            if (each != '¬') {
+                buf[i++] = each;
+            }
+        }
+        if (i == str.length()) {
+            return str;
+        } else {
+            return new String(Arrays.copyOfRange(buf, 0, i));
+        }
+    }
+
+    Fact buildDocHeader(DocumentMessage msg){
+        return new Fact.Builder()
+                .title(msg.getTitle())
+                .titleSense(factProcessor.convertToSense(factProcessor.splitWords(msg.getTitle()), msg.getGolem()))
+                .docUrl(WebHelper.getDecodedURL(msg.getUrl()))
+                .docLang(langDetector.detectLanguage(msg.getContent()))
+                .golem(msg.getGolem()).build();
+    }
+
+    List<Fact> buildListOfFacts(long docId, DocumentMessage msg){
+        List<Fact> facts = new ArrayList<>();
+        int startPos = 0;
+        for (String textBlock:msg.getContent().split("\n")){
+            facts.addAll(factProcessor.splitDocument(textBlock, docId, msg.getGolem(), startPos));
+            startPos = facts.get(facts.size()-1).getDocPosition();
+        }
+        return facts;
     }
 }

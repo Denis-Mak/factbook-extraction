@@ -2,6 +2,7 @@ package it.factbook.extraction;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.l3s.boilerpipe.extractors.CommonExtractors;
 import it.factbook.extraction.config.AmqpConfig;
 import it.factbook.extraction.message.DocumentMessage;
 import it.factbook.extraction.message.SearchResultsMessage;
@@ -49,7 +50,7 @@ public class Crawler implements MessageListener{
         try {
             searchResultsMessage = jsonMapper.readValue(message.getBody(), SearchResultsMessage.class);
         } catch (IOException e) {
-            log.error("Error during unpack SearchResultsMessage: {}", e);
+            log.error("Error during unpack SearchResultsMessage: ", e);
         }
         log.debug("Received message. ProfileId: {}. Qty of links: {}.", searchResultsMessage.getProfileId(), searchResultsMessage.getLinks().size());
         final long requestLogId = searchResultsMessage.getRequestLogId();
@@ -105,7 +106,7 @@ public class Crawler implements MessageListener{
                 case "text/html":
                 case "application/xhtml+xml": {
                     BodyContentHandler ch = new BodyContentHandler(100000); // Max symbols in document
-                    BoilerpipeContentHandler bch = new BoilerpipeContentHandler(ch);
+                    BoilerpipeContentHandler bch = new BoilerpipeContentHandler(ch, CommonExtractors.ARTICLE_EXTRACTOR);
                     HtmlParser parser = new HtmlParser();
                     parser.parse(is, bch, metadata, new ParseContext());
                     content = ch.toString();

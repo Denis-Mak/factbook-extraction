@@ -10,7 +10,7 @@ import java.io.IOException;
  */
 public class MessageFixtures {
     public static ObjectMapper mapper = new ObjectMapper();
-    public static String profileMessageJson = "{\"profileId\":0, \"initialQuery\":\"\","+
+    public static String profileMessageJson = "{\"profileId\":0, \"initialQuery\":\"mobile\","+
             "\"queryLines\":[" +
             "[[{\"word\":\"ios\",\"golem\":\"WIKI_EN\"},{\"word\":\"iphone\",\"golem\":\"WIKI_EN\"}]]," +
             "[[{\"word\":\"power\",\"golem\":\"WIKI_EN\"},{\"word\":\"consumption\",\"golem\":\"WIKI_EN\"}]]," +

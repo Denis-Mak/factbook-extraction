@@ -2,6 +2,7 @@ package it.factbook.extraction;
 
 import it.factbook.extraction.client.Query;
 import it.factbook.extraction.client.SearchEngine;
+import it.factbook.extraction.util.WebHelper;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -42,7 +43,7 @@ public class CrawlerLog {
         int[] paramTypes = new int[linksFound.size()];
         for(int i = 0; i < linksFound.size(); i++){
             select += "?,";
-            params[i] = linksFound.get(i).getUrlHash();
+            params[i] = DigestUtils.sha1Hex(WebHelper.getDecodedURL(linksFound.get(i).getUrl()));
             paramTypes[i] = Types.CHAR;
         }
         select = select.substring(0,select.length()-1);
@@ -65,19 +66,18 @@ public class CrawlerLog {
     public void logFoundLinks(long profileId, SearchEngine searchEngine, long requestLogId, List<Link> links){
         String INSERT = "INSERT INTO CrawlerLog (profileId, searchEngineId, requestLogId, urlHash, url, golemId, found) " +
                 "VALUES (?,?,?,?,?,?,?)";
-        // Use timestamp as part of primary key, because impossible get surrogate keys after batch update,
-        // but we need to update log records later to keep crawled timestamp
         Timestamp foundTimestamp = new Timestamp(System.currentTimeMillis());
         jdbcTemplate.batchUpdate(INSERT, new BatchPreparedStatementSetter() {
 
             @Override
             public void setValues(PreparedStatement ps, int i)
                     throws SQLException {
+                String docUrl = WebHelper.getDecodedURL(links.get(i).getUrl());
                 ps.setLong      (1, profileId);
                 ps.setInt       (2, searchEngine.getId());
                 ps.setLong      (3, requestLogId);
-                ps.setString    (4, links.get(i).getUrlHash());
-                ps.setString    (5, links.get(i).getUrl());
+                ps.setString    (4, DigestUtils.sha1Hex(docUrl));
+                ps.setString    (5, docUrl);
                 ps.setInt       (6, links.get(i).getGolem().getId());
                 ps.setTimestamp (7, foundTimestamp);
             }
@@ -114,7 +114,7 @@ public class CrawlerLog {
             ps.setInt       (4, errCodeFinal);
             ps.setString    (5, errorMsg);
             ps.setLong      (6, requestLogId);
-            ps.setString    (7, DigestUtils.sha1Hex(url));
+            ps.setString    (7, DigestUtils.sha1Hex(WebHelper.getDecodedURL(url)));
         });
     }
 
