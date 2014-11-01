@@ -43,6 +43,17 @@ public class FactSaverTest {
                 " \n");
     }
 
+    private static final DocumentMessage documentMessageWithEmptyLines = new DocumentMessage();
+    static {
+        documentMessageWithEmptyLines.setGolem(Golem.WIKI_RU);
+        documentMessageWithEmptyLines.setTitle("Умка.");
+        documentMessageWithEmptyLines.setUrl("http://torrentom.com/multfilm/Russkie-multfilmi/online-umka-umka-ischet-druga-dvdrip.htm");
+        documentMessageWithEmptyLines.setContent("   \n" +
+                "Умка. Умка ищет друга смотреть онлайн бесплатно\n" +
+                "Дорогие пользователи! Мы внедрили новую технологию онлайн проигрывания торрент файлов в оригинальном качестве. Вы можете Умка. Умка ищет друга онлайн смотреть бесплатно в хорошем качестве без регистрации, даже Full HD, все зависит от скорости вашего интернета и количества раздающих. Для реализации данной функции нужно установить ACE Stream - аналог торрент клиента для просмотра торрентов онлайн. Читать инструкцию\n" +
+                "Мультфильмы\n");
+    }
+
     @Autowired
     @Qualifier("factSaver")
     private FactSaver factSaver;
@@ -67,5 +78,8 @@ public class FactSaverTest {
     public void testBuildListOfFact(){
         List<Fact> facts = factSaver.buildListOfFacts(1, documentMessage);
         assertEquals(11, facts.size());
+
+        facts = factSaver.buildListOfFacts(2, documentMessageWithEmptyLines);
+        assertEquals(9, facts.size());
     }
 }

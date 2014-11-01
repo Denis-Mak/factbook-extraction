@@ -1,8 +1,10 @@
 package it.factbook.extraction;
 
 import it.factbook.extraction.config.ConfigPropertiesTest;
+import it.factbook.search.repository.FactAdapter;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.support.AnnotationConfigContextLoader;
@@ -16,10 +18,13 @@ import static org.junit.Assert.assertTrue;
 public class CrawlerTest {
     private static Crawler crawler = new Crawler();
 
+    @Autowired
+    FactAdapter factAdapter;
+
     @Test
     public void testDownloadArticle() throws Exception {
         String text =  crawler.downloadArticle("http://www.factsearch.ru/");
-        //String text = crawler.downloadArticle("http://uchebnikionline.com/istoria/novitnya_istoriya_krayin_zahidnoyi_yevropi_ta_pivnichnoyi_ameriki_-_baran_3a/zahidna_yevropa_pivnichna_amerika_osoblivosti_rozvitku.htm");
+        //String text = crawler.downloadArticle("http://habrahabr.ru/special/microsoft/appoftheyear/apps/best/");
         assertTrue(text.length() > 500);
         assertTrue(text.indexOf("Collect facts") > 0);
     }

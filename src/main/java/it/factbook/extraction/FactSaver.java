@@ -126,8 +126,13 @@ public class FactSaver implements MessageListener{
         List<Fact> facts = new ArrayList<>();
         int startPos = 0;
         for (String textBlock:msg.getContent().split("\n")){
-            facts.addAll(factProcessor.splitDocument(textBlock, docId, msg.getGolem(), startPos));
-            startPos = facts.get(facts.size()-1).getDocPosition();
+            if (StringUtils.trimSplitters(textBlock).trim().length() > 0) {
+                List<Fact> factsInBlock = factProcessor.splitDocument(textBlock, docId, msg.getGolem(), startPos);
+                if (factsInBlock.size() > 0) {
+                    facts.addAll(factsInBlock);
+                    startPos = facts.get(facts.size()-1).getDocPosition();
+                }
+            }
         }
         return facts;
     }
