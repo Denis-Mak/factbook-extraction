@@ -11,10 +11,11 @@ import it.factbook.dictionary.repository.jdbc.WordFormAdapterJdbcImpl;
 import it.factbook.extraction.CrawlerLog;
 import it.factbook.search.FactProcessor;
 import it.factbook.search.SearchProfileUpdater;
-import it.factbook.search.repository.ClusterAdapter;
+import it.factbook.search.classifier.Classifier;
+import it.factbook.search.repository.ClassifierAdapter;
 import it.factbook.search.repository.DocumentRepositoryConfig;
 import it.factbook.search.repository.FactAdapter;
-import it.factbook.search.repository.jdbc.ClusterAdapterJdbcImpl;
+import it.factbook.search.repository.jdbc.ClassifierAdapterImpl;
 import it.factbook.search.repository.jdbc.FactAdapterJdbcImpl;
 import it.factbook.sphinx.SphinxIndexUpdater;
 import it.factbook.util.TextSplitter;
@@ -145,11 +146,14 @@ public class BusinessConfig {
     public StemAdapter stemAdapter() {return new StemAdapterJdbcImpl();}
 
     @Bean
-    public ClusterAdapter clusterAdapter() {return new ClusterAdapterJdbcImpl();}
-
-    @Bean
     public TreeParser treeParser() {return new TreeParser();}
 
     @Bean
     public SearchProfileUpdater profileUpdater() {return new SearchProfileUpdater();}
+
+    @Bean
+    public Classifier classifier() {return new Classifier();}
+
+    @Bean
+    public ClassifierAdapter classifierAdapter() {return new ClassifierAdapterImpl(doccacheDataSource());}
 }

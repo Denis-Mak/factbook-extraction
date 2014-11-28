@@ -43,7 +43,7 @@ public class IndexUpdater implements MessageListener{
                 log.debug("Received message. Facts count: {}", msg.getFacts().size());
                 Golem golem = msg.getFacts().get(0).getGolem();
                 List<Fact> factsToInsert = msg.getFacts().stream()
-                        .filter(f -> BitUtils.convertToInt(f.getFactFingerprint()) > 0)
+                        .filter(f -> BitUtils.convertToInt(f.getFingerprint()) > 0)
                         .collect(Collectors.toList());
                 sphinxIndexUpdater.updateIndex(factsToInsert, config.rtIndexes.get(golem).get(0));
             }

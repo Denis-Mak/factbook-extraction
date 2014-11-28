@@ -89,7 +89,7 @@ public class AmqpConfig {
 
     @Bean
     Binding bindingBing() {
-        return bind(bingQueue()).to(searchExtractionExchange()).with("*");
+        return bind(bingQueue()).to(searchExtractionExchange()).with("__SUSPENDED__");
     }
 
     @Bean
@@ -217,7 +217,7 @@ public class AmqpConfig {
     }
 
     @Bean
-    Binding bindingIndexUpdater(){return bind(indexUpdaterQueue()).to(indexUpdaterExchange());}
+    public static Binding bindingIndexUpdater(){return bind(indexUpdaterQueue()).to(indexUpdaterExchange());}
 
     @Bean
     SimpleMessageListenerContainer indexUpdaterContainer(){
@@ -247,4 +247,52 @@ public class AmqpConfig {
 
     @Bean
     public ProfileUpdaterMsgHandler profileUpdaterMsgHandler() {return new ProfileUpdaterMsgHandler();}
+
+    ////////////////////////
+    // Fact Classifier Trainer
+    @Bean
+    public static TopicExchange factClassifierTrainerExchange(){
+        return new TopicExchange("classifier-trainer-exchange");
+    }
+
+    @Bean
+    public static Queue hamClassifierQueue(){
+        return new Queue("ham-classifier-queue");
+    }
+
+    @Bean
+    public static Queue garbageClassifierQueue(){
+        return new Queue("garbage-classifier-queue");
+    }
+
+    @Bean
+    public static Binding bindingHamQueue(){
+        return bind(hamClassifierQueue()).to(factClassifierTrainerExchange()).with("ham");
+    }
+
+    @Bean
+    public static Binding bindingGarbageQueue(){
+        return bind(garbageClassifierQueue()).to(factClassifierTrainerExchange()).with("garbage");
+    }
+
+    @Bean
+     SimpleMessageListenerContainer hamTrainerContainer(){
+        SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory());
+        container.setQueues(hamClassifierQueue());
+        container.setMessageListener(new MessageListenerAdapter(factClassifierTrainer(), "onMessageHam"));
+        return container;
+    }
+
+    @Bean
+    SimpleMessageListenerContainer garbageTrainerContainer(){
+        SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory());
+        container.setQueues(garbageClassifierQueue());
+        container.setMessageListener(new MessageListenerAdapter(factClassifierTrainer(), "onMessageGarbage"));
+        return container;
+    }
+
+    @Bean
+    public FactClassifierTrainer factClassifierTrainer(){
+        return new FactClassifierTrainer();
+    }
 }

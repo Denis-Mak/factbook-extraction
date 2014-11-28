@@ -115,8 +115,11 @@ public class Crawler implements MessageListener{
                 case "application/pdf": {
                     BodyContentHandler ch = new BodyContentHandler();
                     PDFParser parser = new PDFParser();
+                    parser.getPDFParserConfig().setUseNonSequentialParser(false);
+                    parser.getPDFParserConfig().setExtractAnnotationText(false);
+                    parser.getPDFParserConfig().setSortByPosition(true);
                     parser.parse(is, ch, metadata, new ParseContext());
-                    content = ch.toString();
+                    content = ch.toString().replace("-\n\n", "").replace("\n\n"," ");
                     break;
                 }
             }

@@ -4,6 +4,7 @@ import it.factbook.dictionary.Golem;
 import it.factbook.extraction.Link;
 import it.factbook.extraction.MessageFixtures;
 import it.factbook.extraction.config.ConfigPropertiesTest;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +32,7 @@ public class BingClientTest {
     }
 
     @Test
+    @Ignore
     public void testGetLinks() throws Exception {
         List<Link> links = bc.getLinks(new Query(Golem.WIKI_EN, "iphone ios"));
         assertEquals(50, links.size());

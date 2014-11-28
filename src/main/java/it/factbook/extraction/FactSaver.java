@@ -77,7 +77,8 @@ public class FactSaver implements MessageListener{
                         .factLang(f.getFactLang())
                         .docId(f.getDocId())
                         .docPosition(f.getDocPosition())
-                        .factFingerprint(f.getFactFingerprint())
+                        .fingerprint(f.getFingerprint())
+                        .factuality(f.getFactuality())
                         .build())
                 .collect(Collectors.toList());
         FactsMessage factsMessage = new FactsMessage();
@@ -130,7 +131,7 @@ public class FactSaver implements MessageListener{
                 List<Fact> factsInBlock = factProcessor.splitDocument(textBlock, docId, msg.getGolem(), startPos);
                 if (factsInBlock.size() > 0) {
                     facts.addAll(factsInBlock);
-                    startPos = facts.get(facts.size()-1).getDocPosition();
+                    startPos = facts.get(facts.size()-1).getDocPosition() + 1;
                 }
             }
         }
