@@ -3,7 +3,6 @@ package it.factbook.extraction.client;
 import com.fasterxml.jackson.databind.JsonNode;
 import it.factbook.extraction.Link;
 import it.factbook.extraction.message.ProfileMessage;
-import it.factbook.extraction.message.SearchResultsMessage;
 import it.factbook.extraction.util.WebHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,14 +42,7 @@ public class BingClient extends AbstractSearchEngineClient implements MessageLis
             List<Link> foundLinks = getLinks(query);
             List<Link> linksToCrawl = crawlerLog.getLinksToCrawl(foundLinks);
             crawlerLog.logReturnedResults(requestLogId, foundLinks.size(), linksToCrawl.size());
-            if (linksToCrawl.size() > 0) {
-                crawlerLog.logFoundLinks(profileMessage.getProfileId(), SEARCH_ENGINE, requestLogId, foundLinks);
-                SearchResultsMessage searchResultsMessage = new SearchResultsMessage(linksToCrawl);
-                searchResultsMessage.setProfileId(profileMessage.getProfileId());
-                searchResultsMessage.setSearchEngine(SEARCH_ENGINE);
-                searchResultsMessage.setRequestLogId(requestLogId);
-                passResultsToCrawler(searchResultsMessage);
-            }
+            sendToCrawler(profileMessage.getProfileId(), SEARCH_ENGINE, requestLogId, linksToCrawl);
         }
     }
 

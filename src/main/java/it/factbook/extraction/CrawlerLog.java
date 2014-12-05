@@ -38,21 +38,28 @@ public class CrawlerLog {
      */
     public List<Link> getLinksToCrawl(List<Link> linksFound){
         if (linksFound == null || linksFound.size() == 0) return new ArrayList<>();
+        List<Link> decodedLinks = linksFound.stream()
+                .map(l -> new Link(WebHelper.getDecodedURL(l.getUrl()), l.getTitle(), l.getSnippet(), l.getGolem()))
+                .collect(Collectors.toList());
         String select = "SELECT urlHash FROM CrawlerLog WHERE urlHash IN (";
         Object[] params = new Object[linksFound.size()];
         int[] paramTypes = new int[linksFound.size()];
         for(int i = 0; i < linksFound.size(); i++){
             select += "?,";
-            params[i] = DigestUtils.sha1Hex(WebHelper.getDecodedURL(linksFound.get(i).getUrl()));
+            params[i] = decodedLinks.get(i).getUrlHash();
             paramTypes[i] = Types.CHAR;
         }
         select = select.substring(0,select.length()-1);
         select += ")";
         List<String> alreadyCrawledUrls = jdbcTemplate.query(select, params, paramTypes, (rs, rowNum) -> rs.getString("urlHash"));
         //remove links, that we have already had in our index
-        return linksFound.stream()
-                .filter(l -> !(alreadyCrawledUrls.contains(l.getUrlHash())))
-                .collect(Collectors.toList());
+        List<Link> linksToCrawl = new ArrayList<>(linksFound.size());
+        for (int i = 0; i < decodedLinks.size(); i++){
+            if (!alreadyCrawledUrls.contains(decodedLinks.get(i).getUrlHash())){
+                linksToCrawl.add(linksFound.get(i));
+            }
+        }
+        return linksToCrawl;
     }
 
 

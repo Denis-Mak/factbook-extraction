@@ -58,13 +58,13 @@ public class Crawler implements MessageListener{
         for (Link link: searchResultsMessage.getLinks()){
             executor.execute(() -> {
                 long startDownload = System.currentTimeMillis();
-                String articleBody = "";
+                String content = "";
                 try {
                     log.debug("Start download link: {}", link.getUrl());
-                    articleBody = downloadArticle(link.getUrl());
+                    content = downloadArticle(link.getUrl());
                     crawlerLog.logDownloadedArticles(requestLogId,
                             link.getUrl(),
-                            articleBody,
+                            content,
                             startDownload,
                             "");
                     log.debug("Link downloaded: {}", link.getUrl());
@@ -77,8 +77,11 @@ public class Crawler implements MessageListener{
                             startDownload,
                             e.getMessage());
                 }
-                if (articleBody.length() > 0) {
-                    DocumentMessage documentMessage = new DocumentMessage(link, articleBody);
+                if (content.length() > 0) {
+                    if (link.getTitle() == null) {
+                        link.setTitle("");
+                    }
+                    DocumentMessage documentMessage = new DocumentMessage(link, content);
                     passDocumentToFactSaver(documentMessage);
                 }
             });
@@ -95,9 +98,9 @@ public class Crawler implements MessageListener{
         }
     }
 
-    public String downloadArticle(String url) throws IOException, TikaException, SAXException {
-        String content = "";
+    protected String downloadArticle(String url) throws IOException, TikaException, SAXException {
         InputStream is = null;
+        String content = "";
         try {
             Metadata metadata = new Metadata();
             is = WebHelper.getInputStream(url);
@@ -115,11 +118,8 @@ public class Crawler implements MessageListener{
                 case "application/pdf": {
                     BodyContentHandler ch = new BodyContentHandler();
                     PDFParser parser = new PDFParser();
-                    parser.getPDFParserConfig().setUseNonSequentialParser(false);
-                    parser.getPDFParserConfig().setExtractAnnotationText(false);
-                    parser.getPDFParserConfig().setSortByPosition(true);
                     parser.parse(is, ch, metadata, new ParseContext());
-                    content = ch.toString().replace("-\n\n", "").replace("\n\n"," ");
+                    content = ch.toString().replace("-\n\n", "").replace("-\n", "").replace("\n"," ");
                     break;
                 }
             }
@@ -128,5 +128,24 @@ public class Crawler implements MessageListener{
         }
 
         return content;
+    }
+
+    protected String getTitle(Metadata metadata, String content){
+        String title = metadata.get("title");
+        if (title == null){
+            title = metadata.get("");
+        }
+        if (title == null) {
+            int newLine = content.indexOf(System.lineSeparator());
+            int fullStop = content.indexOf('.');
+            if (newLine > -1 && newLine < fullStop) {
+                title = content.substring(0, newLine);
+            } else if (fullStop > -1 && fullStop < newLine) {
+                title = content.substring(0, fullStop);
+            } else {
+                title = content.substring(0, 100) + "...";
+            }
+        }
+        return title;
     }
 }

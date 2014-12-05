@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.factbook.dictionary.Golem;
 import it.factbook.dictionary.WordForm;
+import it.factbook.extraction.Link;
 import it.factbook.extraction.config.AmqpConfig;
 import it.factbook.extraction.CrawlerLog;
 import it.factbook.extraction.message.ProfileMessage;
@@ -43,6 +44,23 @@ public abstract class AbstractSearchEngineClient {
             log().error("Error during unpack ProfileMessage: {}", e);
         }
         return profileMessage;
+    }
+
+    protected void sendToCrawler(long profileId, SearchEngine searchEngine, long requestLogId, List<Link> linksToCrawl){
+        if (linksToCrawl == null || linksToCrawl.size() < 1) {
+            return;
+        }
+        crawlerLog.logFoundLinks(profileId, searchEngine, requestLogId, linksToCrawl);
+        SearchResultsMessage searchResultsMessage = new SearchResultsMessage(linksToCrawl);
+        searchResultsMessage.setProfileId(profileId);
+        searchResultsMessage.setSearchEngine(searchEngine);
+        searchResultsMessage.setRequestLogId(requestLogId);
+        try {
+            String json = jsonMapper.writeValueAsString(searchResultsMessage);
+            amqpTemplate.convertAndSend(AmqpConfig.crawlerExchange().getName(), "#", json);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
     }
 
     protected void passResultsToCrawler(SearchResultsMessage msg){

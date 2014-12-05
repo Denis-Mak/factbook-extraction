@@ -2,6 +2,9 @@ package it.factbook.extraction.client;
 
 import it.factbook.dictionary.Golem;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  *
  */
@@ -20,6 +23,14 @@ public enum SearchEngine {
         this.golems = golems;
     }
 
+    private static Map<Integer, SearchEngine> map = new HashMap<>();
+
+    static {
+        for (SearchEngine se : SearchEngine.values()) {
+            map.put(se.id, se);
+        }
+    }
+
     public int getId() {return id;}
 
     public Golem[] getGolemIds() {return golems;}
@@ -29,5 +40,9 @@ public enum SearchEngine {
             if (elm == golem) {return true;}
         }
         return false;
+    }
+
+    public static SearchEngine valueOf(int searchEngineId){
+        return map.get(searchEngineId);
     }
 }

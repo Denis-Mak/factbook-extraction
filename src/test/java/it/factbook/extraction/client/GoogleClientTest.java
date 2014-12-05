@@ -27,4 +27,5 @@ public class GoogleClientTest {
         List<Link> links = googleClient.getLinks(new Query(Golem.WIKI_EN, "iphone ios"));
         assertEquals(10, links.size());
     }
+
 }
