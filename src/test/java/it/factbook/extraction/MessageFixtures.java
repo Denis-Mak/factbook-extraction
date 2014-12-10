@@ -24,4 +24,11 @@ public class MessageFixtures {
             e.printStackTrace();
         }
     }
+
+    public static ProfileMessage profileMessageWithoutLines;
+    static {
+        profileMessageWithoutLines = new ProfileMessage();
+        profileMessageWithoutLines.setProfileId(1);
+        profileMessageWithoutLines.setInitialQuery("maduro maio");
+    }
 }

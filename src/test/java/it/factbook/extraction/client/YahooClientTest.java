@@ -8,6 +8,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.support.AnnotationConfigContextLoader;
@@ -20,7 +21,8 @@ import static org.junit.Assert.assertEquals;
 @ContextConfiguration(classes= ConfigPropertiesTest.class, loader=AnnotationConfigContextLoader.class)
 public class YahooClientTest {
     @Autowired
-    YahooClient yahooClient;
+    @Qualifier("yahooClient")
+    private YahooClient yahooClient;
 
     @Test
     @Ignore
@@ -35,5 +37,7 @@ public class YahooClientTest {
         assertEquals(2, queries.size());
         assertEquals("+mobile телефон эпл", queries.get(0).query);
         assertEquals("+mobile ios iphone OR +mobile power consumption", queries.get(1).query);
+
+        ClientTestUtils.testGetQueryForProfileWithoutLines(yahooClient);
     }
 }

@@ -39,6 +39,7 @@ public class CrawlerTest {
     public void testDownloadPdfArticle() throws Exception{
         String text = crawler.downloadArticle("http://www.cogsci.ucsd.edu/~pineda/COGS175/readings/Siegel.pdf");
         //String text = crawler.downloadArticle("http://www.ohsu.edu/nod/documents/2009/05-29/Kreitzer%202008.pdf");
+
         assertTrue(text.length() > 1000);
         assertTrue(text.indexOf("The stereotaxic instrument") > 0);
     }

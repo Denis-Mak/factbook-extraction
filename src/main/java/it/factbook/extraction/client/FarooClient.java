@@ -9,22 +9,19 @@ import it.factbook.extraction.util.WebHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.Message;
-import org.springframework.amqp.core.MessageListener;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 /**
  *
  */
 @Component
-public class FarooClient extends AbstractSearchEngineClient implements MessageListener{
+public class FarooClient extends AbstractSearchEngineClient implements SearchEngineClient{
     private static final SearchEngine SEARCH_ENGINE = SearchEngine.FAROO;
     static Logger log = LoggerFactory.getLogger(FarooClient.class);
 
@@ -53,22 +50,35 @@ public class FarooClient extends AbstractSearchEngineClient implements MessageLi
     }
 
     @Override
-    protected List<Query> getQueries(ProfileMessage msg){
+    public List<Query> getQueries(ProfileMessage msg){
         List<Query> queries = new ArrayList<>(50);
-        for (List<List<WordForm>> line: msg.getQueryLines()){
-            for(List<WordForm> wordgram: line){
-                Golem golem = wordgram.get(0).getGolem();
-                if (SEARCH_ENGINE.containsGolem(golem)) {
-                    String query = msg.getInitialQuery() != null ? msg.getInitialQuery() : "";
-                    for (WordForm word : wordgram) {
-                        query += " " + word.getWord();
+        String initialQuery =
+                (msg.getInitialQuery() != null && msg.getInitialQuery().length() > 0) ?
+                        msg.getInitialQuery() : "";
+        if (msg.getQueryLines() != null && msg.getQueryLines().size() > 0) {
+            for (List<List<WordForm>> line: msg.getQueryLines()){
+                for(List<WordForm> wordgram: line){
+                    Golem golem = wordgram.get(0).getGolem();
+                    if (SEARCH_ENGINE.containsGolem(golem)) {
+                        String query = initialQuery;
+                        for (WordForm word : wordgram) {
+                            query += " " + word.getWord();
+                        }
+                        queries.add(new Query(golem, query));
                     }
-                    queries.add(new Query(golem, query));
                 }
             }
+            return queries;
+        } else if (!"".equals(initialQuery)) {
+            Golem golem = predictGolem(initialQuery);
+            if (SEARCH_ENGINE.containsGolem(golem)) {
+                return Arrays.asList(new Query(golem, initialQuery));
+            } else {
+                return Collections.<Query>emptyList();
+            }
+        } else {
+            return Collections.<Query>emptyList();
         }
-
-        return queries;
     }
 
     List<Link> getLinks(Query query){

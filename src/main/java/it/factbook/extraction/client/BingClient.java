@@ -7,7 +7,6 @@ import it.factbook.extraction.util.WebHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.Message;
-import org.springframework.amqp.core.MessageListener;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.io.IOException;
@@ -20,7 +19,7 @@ import java.util.List;
 /**
  *
  */
-public class BingClient extends AbstractSearchEngineClient implements MessageListener {
+public class BingClient extends AbstractSearchEngineClient implements SearchEngineClient {
     private static final SearchEngine SEARCH_ENGINE = SearchEngine.BING;
     private static final Logger log = LoggerFactory.getLogger(BingClient.class);
 

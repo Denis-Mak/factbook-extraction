@@ -21,8 +21,10 @@ import it.factbook.sphinx.SphinxIndexUpdater;
 import it.factbook.util.TextSplitter;
 import it.factbook.util.TextSplitterOpenNlpRuImpl;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Scope;
 
 import javax.sql.DataSource;
 
@@ -120,40 +122,52 @@ public class BusinessConfig {
 
     //Helper beans
     @Bean
+    @Scope(ConfigurableBeanFactory.SCOPE_SINGLETON)
     public FactProcessor factProcessor(){return new FactProcessor();}
 
     @Bean
+    @Scope(ConfigurableBeanFactory.SCOPE_SINGLETON)
     public FactAdapter factAdapter() {return new FactAdapterJdbcImpl();}
 
     @Bean
+    @Scope(ConfigurableBeanFactory.SCOPE_SINGLETON)
     public CrawlerLog crawlerLog(){
         return new CrawlerLog();
     }
 
     @Bean
+    @Scope(ConfigurableBeanFactory.SCOPE_SINGLETON)
     public SphinxIndexUpdater sphinxIndexUpdater() {return new SphinxIndexUpdater();}
 
     @Bean
+    @Scope(ConfigurableBeanFactory.SCOPE_SINGLETON)
     public TextSplitter textSplitter() {return new TextSplitterOpenNlpRuImpl();}
 
     @Bean
+    @Scope(ConfigurableBeanFactory.SCOPE_SINGLETON)
     public LangDetector langDetector() {return new LangDetectorCybozuImpl();}
 
     @Bean
+    @Scope(ConfigurableBeanFactory.SCOPE_SINGLETON)
     public WordFormAdapter wordFormAdapter() {return new WordFormAdapterJdbcImpl();}
 
     @Bean
+    @Scope(ConfigurableBeanFactory.SCOPE_SINGLETON)
     public StemAdapter stemAdapter() {return new StemAdapterJdbcImpl();}
 
     @Bean
+    @Scope(ConfigurableBeanFactory.SCOPE_SINGLETON)
     public TreeParser treeParser() {return new TreeParser();}
 
     @Bean
+    @Scope(ConfigurableBeanFactory.SCOPE_SINGLETON)
     public SearchProfileUpdater profileUpdater() {return new SearchProfileUpdater();}
 
     @Bean
+    @Scope(ConfigurableBeanFactory.SCOPE_SINGLETON)
     public Classifier classifier() {return new Classifier();}
 
     @Bean
+    @Scope(ConfigurableBeanFactory.SCOPE_SINGLETON)
     public ClassifierAdapter classifierAdapter() {return new ClassifierAdapterImpl(doccacheDataSource());}
 }

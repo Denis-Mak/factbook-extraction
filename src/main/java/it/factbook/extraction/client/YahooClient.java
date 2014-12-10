@@ -9,7 +9,6 @@ import it.factbook.extraction.util.WebHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.Message;
-import org.springframework.amqp.core.MessageListener;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -22,7 +21,7 @@ import java.util.*;
  *
  */
 @Component
-public class YahooClient extends AbstractSearchEngineClient implements MessageListener {
+public class YahooClient extends AbstractSearchEngineClient implements SearchEngineClient {
     private static final SearchEngine SEARCH_ENGINE = SearchEngine.YAHOO;
     private static final Logger log = LoggerFactory.getLogger(YahooClient.class);
 
@@ -52,45 +51,55 @@ public class YahooClient extends AbstractSearchEngineClient implements MessageLi
     }
 
     @Override
-    protected List<Query> getQueries(ProfileMessage profileMessage) {
+    public List<Query> getQueries(ProfileMessage profileMessage) {
         int WORDGRAMS_IN_ONE_QUERY = 5;
         List<Query> wordgramQueries = new ArrayList<>();
-        String initialQuery =
-                (profileMessage.getInitialQuery() != null && profileMessage.getInitialQuery().length() > 0) ?
-                        "+" + profileMessage.getInitialQuery() + " " : "";
-        StringJoiner sj = new StringJoiner(" ", initialQuery, " OR ");
-        for (List<List<WordForm>> line: profileMessage.getQueryLines()){
-            for(List<WordForm> wordgram: line){
-                for (WordForm word : wordgram) {
-                    sj.add(word.getWord());
-                }
-                if (wordgram.get(0).getGolem() != Golem.UNKNOWN) {
-                    wordgramQueries.add(new Query(wordgram.get(0).getGolem(), sj.toString()));
-                }
-                sj = new StringJoiner(" ", initialQuery, " OR ");
+        String initialQuery = (profileMessage.getInitialQuery() == null || profileMessage.getInitialQuery().length() < 1) ? "" : profileMessage.getInitialQuery();
+        if (profileMessage.getQueryLines() != null && profileMessage.getQueryLines().size() > 0) {
+            String tmp = "";
+            for(String word: initialQuery.split("\\s")){
+                tmp += "+" + word + " ";
             }
-        }
-        Collections.sort(wordgramQueries, (q1, q2) -> q1.golem.getId() - q2.golem.getId());
-        List<Query> queries = new ArrayList<>();
-        int wordgramCounter = 0;
-        Golem golem = Golem.UNKNOWN;
-
-        String queryStr = "";
-        for (Query each:wordgramQueries){
-            if (wordgramCounter == 0) golem = each.golem;
-            if (each.golem != golem || wordgramCounter >= WORDGRAMS_IN_ONE_QUERY){
-                wordgramCounter = 0;
-                queries.add(new Query(golem, queryStr.substring(0, queryStr.length()-4)));
-                queryStr = "";
-                golem = each.golem;
+            initialQuery = tmp;
+            StringJoiner sj = new StringJoiner(" ", initialQuery, " OR ");
+            for (List<List<WordForm>> line: profileMessage.getQueryLines()){
+                for(List<WordForm> wordgram: line){
+                    for (WordForm word : wordgram) {
+                        sj.add(word.getWord());
+                    }
+                    if (wordgram.get(0).getGolem() != Golem.UNKNOWN) {
+                        wordgramQueries.add(new Query(wordgram.get(0).getGolem(), sj.toString()));
+                    }
+                    sj = new StringJoiner(" ", initialQuery, " OR ");
+                }
             }
+            Collections.sort(wordgramQueries, (q1, q2) -> q1.golem.getId() - q2.golem.getId());
+            List<Query> queries = new ArrayList<>();
+            int wordgramCounter = 0;
+            Golem golem = Golem.UNKNOWN;
 
-            wordgramCounter++;
-            queryStr += each.query;
+            String queryStr = "";
+            for (Query each:wordgramQueries){
+                if (wordgramCounter == 0) golem = each.golem;
+                if (each.golem != golem || wordgramCounter >= WORDGRAMS_IN_ONE_QUERY){
+                    wordgramCounter = 0;
+                    queries.add(new Query(golem, queryStr.substring(0, queryStr.length()-4)));
+                    queryStr = "";
+                    golem = each.golem;
+                }
+
+                wordgramCounter++;
+                queryStr += each.query;
+            }
+            queries.add(new Query(golem, queryStr.substring(0, queryStr.length()-4)));
+
+            return queries;
+        } else if (!"".equals(initialQuery)) {
+            Query query = new Query(predictGolem(initialQuery), initialQuery);
+            return Arrays.asList(query);
+        } else {
+            return Collections.<Query>emptyList();
         }
-        queries.add(new Query(golem, queryStr.substring(0, queryStr.length()-4)));
-
-        return queries;
     }
 
     List<Link> getLinks(Query query){

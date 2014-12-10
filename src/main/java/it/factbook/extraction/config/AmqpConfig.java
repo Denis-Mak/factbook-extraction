@@ -1,10 +1,7 @@
 package it.factbook.extraction.config;
 
 import it.factbook.extraction.*;
-import it.factbook.extraction.client.BingClient;
-import it.factbook.extraction.client.FarooClient;
-import it.factbook.extraction.client.GoogleClient;
-import it.factbook.extraction.client.YahooClient;
+import it.factbook.extraction.client.*;
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -76,8 +73,8 @@ public class AmqpConfig {
         return container;
     }
 
-    @Bean
-    FarooClient farooClient() {
+    @Bean (name = "farooClient")
+    SearchEngineClient farooClient() {
         return new FarooClient();
     }
 
@@ -100,8 +97,8 @@ public class AmqpConfig {
         return container;
     }
 
-    @Bean
-    BingClient bingClient() {
+    @Bean (name = "bingClient")
+    SearchEngineClient bingClient() {
         return new BingClient();
     }
 
@@ -124,8 +121,8 @@ public class AmqpConfig {
         return container;
     }
 
-    @Bean
-    GoogleClient googleClient() {
+    @Bean (name = "googleClient")
+    SearchEngineClient googleClient() {
         return new GoogleClient();
     }
 
@@ -148,8 +145,8 @@ public class AmqpConfig {
         return container;
     }
 
-    @Bean
-    YahooClient yahooClient() {
+    @Bean (name = "yahooClient")
+    SearchEngineClient yahooClient() {
         return new YahooClient();
     }
 

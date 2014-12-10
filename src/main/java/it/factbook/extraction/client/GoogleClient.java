@@ -7,7 +7,6 @@ import it.factbook.extraction.util.WebHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.Message;
-import org.springframework.amqp.core.MessageListener;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -22,7 +21,7 @@ import java.util.List;
  *
  */
 @Component
-public class GoogleClient extends AbstractSearchEngineClient implements MessageListener {
+public class GoogleClient extends AbstractSearchEngineClient implements SearchEngineClient {
     private static final SearchEngine SEARCH_ENGINE = SearchEngine.GOOGLE;
     private static final Logger log = LoggerFactory.getLogger(GoogleClient.class);
 
