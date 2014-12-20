@@ -4,6 +4,7 @@ import com.jolbox.bonecp.BoneCPDataSource;
 import it.factbook.dictionary.LangDetector;
 import it.factbook.dictionary.LangDetectorCybozuImpl;
 import it.factbook.dictionary.parse.TreeParser;
+import it.factbook.dictionary.parse.TreeParserImpl;
 import it.factbook.dictionary.repository.StemAdapter;
 import it.factbook.dictionary.repository.WordFormAdapter;
 import it.factbook.dictionary.repository.jdbc.StemAdapterJdbcImpl;
@@ -12,6 +13,9 @@ import it.factbook.extraction.CrawlerLog;
 import it.factbook.search.FactProcessor;
 import it.factbook.search.SearchProfileUpdater;
 import it.factbook.search.classifier.Classifier;
+import it.factbook.search.classifier.ClassifierFeature;
+import it.factbook.search.classifier.features.ClassifierFeatureHandler;
+import it.factbook.search.classifier.features.MaxTreeDepthHandler;
 import it.factbook.search.repository.ClassifierAdapter;
 import it.factbook.search.repository.DocumentRepositoryConfig;
 import it.factbook.search.repository.FactAdapter;
@@ -157,7 +161,7 @@ public class BusinessConfig {
 
     @Bean
     @Scope(ConfigurableBeanFactory.SCOPE_SINGLETON)
-    public TreeParser treeParser() {return new TreeParser();}
+    public TreeParser treeParser() {return new TreeParserImpl();}
 
     @Bean
     @Scope(ConfigurableBeanFactory.SCOPE_SINGLETON)
@@ -170,4 +174,15 @@ public class BusinessConfig {
     @Bean
     @Scope(ConfigurableBeanFactory.SCOPE_SINGLETON)
     public ClassifierAdapter classifierAdapter() {return new ClassifierAdapterImpl(doccacheDataSource());}
+
+    @Bean
+    @Scope
+    public ClassifierFeatureHandler maxTreeDepthFeatureHandler(){
+        return new MaxTreeDepthHandler();
+    }
+
+    @Bean
+    public ClassifierFeature.BeanInjector beanInjector(){
+        return new ClassifierFeature.BeanInjector();
+    }
 }
