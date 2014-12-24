@@ -7,7 +7,6 @@ import it.factbook.search.Fact;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.support.AnnotationConfigContextLoader;
@@ -55,7 +54,6 @@ public class FactSaverTest {
     }
 
     @Autowired
-    @Qualifier("factSaver")
     private FactSaver factSaver;
 
     @Test
@@ -70,7 +68,7 @@ public class FactSaverTest {
     @Test
     public void testBuildDocHeader(){
         Fact docHeader = factSaver.buildDocHeader(documentMessage);
-        assertEquals("264 479 305 147 638 264 532 368", docHeader.getTitleSense());
+        assertEquals("1373 875 1415 2359 1583 1415 1949 582", docHeader.getTitleSense());
         assertEquals("3012755c03eae1d9227f1e666fe0d2a80df11967", docHeader.getTitleHash());
     }
 

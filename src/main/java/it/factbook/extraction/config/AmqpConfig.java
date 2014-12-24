@@ -73,8 +73,8 @@ public class AmqpConfig {
         return container;
     }
 
-    @Bean (name = "farooClient")
-    SearchEngineClient farooClient() {
+    @Bean
+    FarooClient farooClient() {
         return new FarooClient();
     }
 
@@ -86,7 +86,7 @@ public class AmqpConfig {
 
     @Bean
     Binding bindingBing() {
-        return bind(bingQueue()).to(searchExtractionExchange()).with("__SUSPENDED__");
+        return bind(bingQueue()).to(searchExtractionExchange()).with("*");
     }
 
     @Bean
@@ -97,8 +97,8 @@ public class AmqpConfig {
         return container;
     }
 
-    @Bean (name = "bingClient")
-    SearchEngineClient bingClient() {
+    @Bean
+    BingClient bingClient() {
         return new BingClient();
     }
 
@@ -121,8 +121,8 @@ public class AmqpConfig {
         return container;
     }
 
-    @Bean (name = "googleClient")
-    SearchEngineClient googleClient() {
+    @Bean
+    GoogleClient googleClient() {
         return new GoogleClient();
     }
 
@@ -145,8 +145,8 @@ public class AmqpConfig {
         return container;
     }
 
-    @Bean (name = "yahooClient")
-    SearchEngineClient yahooClient() {
+    @Bean
+    YahooClient yahooClient() {
         return new YahooClient();
     }
 

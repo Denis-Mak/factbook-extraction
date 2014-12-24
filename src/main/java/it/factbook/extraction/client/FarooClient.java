@@ -1,91 +1,52 @@
 package it.factbook.extraction.client;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import it.factbook.dictionary.Golem;
-import it.factbook.dictionary.WordForm;
 import it.factbook.extraction.Link;
-import it.factbook.extraction.message.ProfileMessage;
 import it.factbook.extraction.util.WebHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.amqp.core.Message;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  *
  */
 @Component
-public class FarooClient extends AbstractSearchEngineClient implements SearchEngineClient{
-    private static final SearchEngine SEARCH_ENGINE = SearchEngine.FAROO;
-    static Logger log = LoggerFactory.getLogger(FarooClient.class);
+public class FarooClient extends AbstractSearchEngineClient{
 
     @Value("${faroo.client.api.key}")
     private String appKey;
 
     @Override
     protected Logger log() {
-        return log;
+        return LoggerFactory.getLogger(FarooClient.class);
+    }
+
+    @Override
+    protected SearchEngine searchEngine() {
+        return SearchEngine.FAROO;
+    }
+
+    @Override
+    protected int getMaxResultsPerPage() {
+        return 10;
     }
 
     private static long lastAccessed = 0;
 
     @Override
-    public void onMessage(Message message) {
-        ProfileMessage profileMessage = unpackProfileMessage(message);
-        long profileVersion = System.currentTimeMillis();
-        List<Query> queries = getQueries(profileMessage);
-        for(Query query: queries){
-            long requestLogId = crawlerLog.logSearchRequest(profileMessage.getProfileId(), SEARCH_ENGINE, profileVersion, query);
-            List<Link> foundLinks = getLinks(query);
-            List<Link> linksToCrawl = crawlerLog.getLinksToCrawl(foundLinks);
-            crawlerLog.logReturnedResults(requestLogId, foundLinks.size(), linksToCrawl.size());
-            sendToCrawler(profileMessage.getProfileId(), SEARCH_ENGINE, requestLogId, linksToCrawl);
-        }
-    }
-
-    @Override
-    public List<Query> getQueries(ProfileMessage msg){
-        List<Query> queries = new ArrayList<>(50);
-        String initialQuery =
-                (msg.getInitialQuery() != null && msg.getInitialQuery().length() > 0) ?
-                        msg.getInitialQuery() : "";
-        if (msg.getQueryLines() != null && msg.getQueryLines().size() > 0) {
-            for (List<List<WordForm>> line: msg.getQueryLines()){
-                for(List<WordForm> wordgram: line){
-                    Golem golem = wordgram.get(0).getGolem();
-                    if (SEARCH_ENGINE.containsGolem(golem)) {
-                        String query = initialQuery;
-                        for (WordForm word : wordgram) {
-                            query += " " + word.getWord();
-                        }
-                        queries.add(new Query(golem, query));
-                    }
-                }
-            }
-            return queries;
-        } else if (!"".equals(initialQuery)) {
-            Golem golem = predictGolem(initialQuery);
-            if (SEARCH_ENGINE.containsGolem(golem)) {
-                return Arrays.asList(new Query(golem, initialQuery));
-            } else {
-                return Collections.<Query>emptyList();
-            }
-        } else {
-            return Collections.<Query>emptyList();
-        }
-    }
-
-    List<Link> getLinks(Query query){
-        List<Link> links = new ArrayList<>(100);
+    protected List<Link> getLinks(Request request){
+        List<Link> links = new ArrayList<>(getMaxResultsPerPage());
         try {
             pauseBetweenRequests();
-            JsonNode root = jsonMapper.readTree(WebHelper.getContent(buildUrl(query.query)));
+            JsonNode root = jsonMapper.readTree(WebHelper.getContent(buildUrl(request)));
             JsonNode results = root.path("results");
             Iterator<JsonNode> itr = results.elements();
             while (itr.hasNext()) {
@@ -93,7 +54,7 @@ public class FarooClient extends AbstractSearchEngineClient implements SearchEng
                 links.add(new Link(res.path("url").textValue(),
                         res.path("title").textValue(),
                         res.path("kwic").textValue(),
-                        query.golem));
+                        request.golem));
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -101,14 +62,18 @@ public class FarooClient extends AbstractSearchEngineClient implements SearchEng
         return links;
     }
 
-    private String buildUrl(String query){
+    private String buildUrl(Request request){
         String encQuery = null;
         try {
-            encQuery = URLEncoder.encode(query, "UTF-8");
+            encQuery = URLEncoder.encode(request.query, "UTF-8");
         } catch (UnsupportedEncodingException e) {
-            log.error("Unsupported Encoding!");
+            log().error("Unsupported Encoding!");
         }
-        return "http://www.faroo.com/api?q=" + encQuery + "&start=1&length=10&l=en&src=news&i=false&f=json&key=" + appKey;
+        // if we request not the first page add start parameter to URL
+        String startParam = (request.start >= getMaxResultsPerPage()) ? "&start=" + (request.start + 1)  : "";
+        return "http://www.faroo.com/api?q=" + encQuery
+                + startParam
+                + "&length=10&l=en&src=news&i=false&f=json&key=" + appKey;
     }
 
     private void pauseBetweenRequests() {

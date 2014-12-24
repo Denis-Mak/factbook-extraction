@@ -1,12 +1,12 @@
 package it.factbook.extraction;
 
 import it.factbook.dictionary.Golem;
-import it.factbook.extraction.client.Query;
+import it.factbook.extraction.client.Request;
 import it.factbook.extraction.client.SearchEngine;
 import it.factbook.extraction.config.ConfigPropertiesTest;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.joda.time.DateTime;
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -71,7 +71,6 @@ public class CrawlerLogTest {
     }
 
     @Test
-    @Ignore
     public void testLogDownloadedArticles() throws Exception {
         class Row {
             int downloadSizeByte;
@@ -91,7 +90,7 @@ public class CrawlerLogTest {
                     return r;
                 });
         assertEquals(1, linksWritten.size());
-        assertTrue(linksWritten.get(0).downloadTimeMsec > 2000 && linksWritten.get(0).downloadTimeMsec < 2100);
+        assertTrue(linksWritten.get(0).downloadTimeMsec >= 2000 && linksWritten.get(0).downloadTimeMsec <= 2200);
         assertEquals(325, linksWritten.get(0).downloadSizeByte);
 
         List<Row> linksUntouched = jdbcTemplate.query("SELECT downloadSizeByte, downloadTimeMsec " +
@@ -113,7 +112,8 @@ public class CrawlerLogTest {
     @Test
     public void testLogRequest(){
         jdbcTemplate.execute("TRUNCATE TABLE RequestLog");
-        long requestId = crawlerLog.logSearchRequest(PROFILE_ID, SE, PROFILE_VERSION, new Query(Golem.WIKI_EN,"query"));
+        Request request = new Request(Golem.WIKI_EN, "query", 0, new DateTime());
+        long requestId = crawlerLog.logSearchRequest(PROFILE_ID, SE, PROFILE_VERSION, request);
         long rowCount = jdbcTemplate.queryForObject("SELECT COUNT(1) FROM RequestLog", (row, rowNm) -> row.getLong(1));
         assertEquals(1, rowCount);
         assertTrue(requestId > 0);
@@ -122,7 +122,8 @@ public class CrawlerLogTest {
     @Test
     public void testLogReturnedResults(){
         jdbcTemplate.execute("TRUNCATE TABLE RequestLog");
-        long requestId = crawlerLog.logSearchRequest(PROFILE_ID, SE, PROFILE_VERSION, new Query(Golem.WIKI_EN,"query"));
+        Request request = new Request(Golem.WIKI_EN, "query", 0, new DateTime());
+        long requestId = crawlerLog.logSearchRequest(PROFILE_ID, SE, PROFILE_VERSION, request);
         crawlerLog.logReturnedResults(requestId, 10, 5);
         class Row {
             int resultsReturned;
@@ -138,5 +139,31 @@ public class CrawlerLogTest {
         assertEquals(10, r.resultsReturned);
         assertEquals(5, r.newLinks);
         assertTrue(requestId > 0);
+    }
+
+    @Test
+    public void testGetRequests(){
+        jdbcTemplate.execute("TRUNCATE TABLE RequestLog");
+        Request request = new Request(Golem.WIKI_EN, "query", 0, new DateTime());
+        crawlerLog.logSearchRequest(PROFILE_ID, SE, PROFILE_VERSION, request);
+        request = new Request(Golem.WIKI_EN, "query", 10, new DateTime());
+        crawlerLog.logSearchRequest(PROFILE_ID, SE, PROFILE_VERSION, request);
+        List<Request> requests = crawlerLog.getRequests("query", SE);
+        assertEquals(2, requests.size());
+    }
+
+    @Test
+    public void testIncrementCashHits() {
+        jdbcTemplate.execute("TRUNCATE TABLE RequestCashHit");
+        crawlerLog.incrementCashHits("query", SE);
+        crawlerLog.incrementCashHits("query", SE);
+        crawlerLog.incrementCashHits("query", SE);
+        String queryHash = DigestUtils.sha1Hex("query");
+        int hits = jdbcTemplate.queryForObject("SELECT hits FROM RequestCashHit WHERE queryHash = ? " +
+                "AND searchEngineId = ?",
+                new Object[]{queryHash, SE.getId()},
+                new int[] {Types.CHAR, Types.INTEGER},
+                Integer.class);
+        assertEquals(3, hits);
     }
 }

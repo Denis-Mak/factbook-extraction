@@ -1,13 +1,17 @@
 package it.factbook.extraction;
 
-import it.factbook.extraction.client.Query;
+import it.factbook.dictionary.Golem;
+import it.factbook.extraction.client.Request;
 import it.factbook.extraction.client.SearchEngine;
 import it.factbook.extraction.util.WebHelper;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.simple.ParameterizedRowMapper;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
@@ -131,25 +135,40 @@ public class CrawlerLog {
      * @param profileId
      * @param searchEngine
      * @param profileVersion
-     * @param query
+     * @param request
      * @return
      */
-    public long logSearchRequest(long profileId, SearchEngine searchEngine, long profileVersion, Query query){
-        String INSERT = "INSERT INTO RequestLog (profileId, searchEngineId, profileVersion, golemId, query, queryHash, requested) " +
-                "VALUES (?,?,?,?,?,?,?)";
+    public long logSearchRequest(long profileId, SearchEngine searchEngine, long profileVersion, Request request){
+        String INSERT = "INSERT INTO RequestLog (profileId, searchEngineId, profileVersion, golemId, query, queryHash, requested, start) " +
+                "VALUES (?,?,?,?,?,?,?,?)";
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(con -> {
                     PreparedStatement ps = con.prepareStatement(INSERT, Statement.RETURN_GENERATED_KEYS);
                     ps.setLong(1, profileId);
                     ps.setInt(2, searchEngine.getId());
                     ps.setLong(3, profileVersion);
-                    ps.setInt(4, query.golem.getId());
-                    ps.setString(5, query.query);
-                    ps.setString(6, DigestUtils.sha1Hex(query.query));
+                    ps.setInt(4, request.golem.getId());
+                    ps.setString(5, request.query);
+                    ps.setString(6, DigestUtils.sha1Hex(request.query));
                     ps.setTimestamp(7, new Timestamp(System.currentTimeMillis()));
+                    ps.setInt(8, request.start);
                     return ps;
                 }, keyHolder);
         return (long)keyHolder.getKey();
+    }
+
+    /**
+     *
+     * @param query
+     * @param searchEngine
+     * @return
+     */
+    public List<Request> getRequests(String query, SearchEngine searchEngine){
+        String SELECT = "SELECT requestLogId, query, golemId, requested, start FROM RequestLog WHERE searchEngineId = ? AND queryHash = ?";
+        return jdbcTemplate.query(SELECT,
+                new Object[]{searchEngine.getId(), DigestUtils.sha1Hex(query)},
+                new int[] {Types.INTEGER, Types.CHAR},
+                new RequestRowMapper());
     }
 
     /**
@@ -161,5 +180,36 @@ public class CrawlerLog {
         String UPDATE = "UPDATE RequestLog SET resultsReturned=?, newLinks=? WHERE requestLogId=?";
         jdbcTemplate.update(UPDATE, new Object[]{resultsReturned, newLinks, requestLogId},
                 new int[]{Types.INTEGER, Types.INTEGER, Types.BIGINT});
+    }
+
+    /**
+     *
+     * @param query
+     * @param searchEngine
+     */
+    public void incrementCashHits(String query, SearchEngine searchEngine) {
+        String queryHash = DigestUtils.sha1Hex(query);
+        int searchEngineId = searchEngine.getId();
+        try {
+            int hits = jdbcTemplate.queryForObject("SELECT hits FROM RequestCashHit WHERE queryHash = ? " +
+                            "AND searchEngineId = ?",
+                    new Object[]{queryHash, searchEngineId},
+                    new int[] {Types.CHAR, Types.INTEGER},
+                    Integer.class);
+            jdbcTemplate.update("UPDATE RequestCashHit SET hits = ? WHERE searchEngineId = ? AND queryHash = ?",
+                    new Object[]{hits + 1, searchEngineId, queryHash},
+                    new int[]{Types.INTEGER, Types.INTEGER, Types.CHAR});
+        } catch (DataAccessException e){
+            jdbcTemplate.update("INSERT RequestCashHit(hits, searchEngineId, queryHash) VALUES(?,?,?)",
+                    new Object[]{1, searchEngineId, queryHash},
+                    new int[]{Types.INTEGER, Types.INTEGER, Types.CHAR});
+        }
+    }
+
+    private static class RequestRowMapper implements ParameterizedRowMapper<Request> {
+        @Override
+        public Request mapRow(ResultSet rs, int rowNum) throws SQLException {
+            return new Request(Golem.valueOf(rs.getInt("golemId")), rs.getString("query"), rs.getInt("start"), new DateTime(rs.getTimestamp("requested")));
+        }
     }
 }

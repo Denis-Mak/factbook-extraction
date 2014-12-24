@@ -10,9 +10,12 @@ import it.factbook.extraction.Link;
 import it.factbook.extraction.config.AmqpConfig;
 import it.factbook.extraction.message.ProfileMessage;
 import it.factbook.extraction.message.SearchResultsMessage;
+import org.joda.time.DateTime;
+import org.joda.time.Months;
 import org.slf4j.Logger;
 import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageListener;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -23,9 +26,8 @@ import java.util.*;
  *
  */
 @Component
-public abstract class AbstractSearchEngineClient {
-    protected abstract Logger log();
-    static ObjectMapper jsonMapper = new ObjectMapper();
+public abstract class AbstractSearchEngineClient implements MessageListener {
+    private static final int SEARCH_MAX_DEPTH_PAGES = 3;
 
     @Autowired
     AmqpTemplate amqpTemplate;
@@ -36,7 +38,58 @@ public abstract class AbstractSearchEngineClient {
     @Autowired
     LangDetector langDetector;
 
-    protected ProfileMessage unpackProfileMessage(Message message){
+
+    static ObjectMapper jsonMapper = new ObjectMapper();
+
+    protected abstract Logger log();
+
+    protected abstract SearchEngine searchEngine();
+
+    protected abstract int getMaxResultsPerPage();
+
+    protected abstract List<Link> getLinks(Request request);
+
+    @Override
+    public void onMessage(Message message) {
+        ProfileMessage profileMessage = unpackProfileMessage(message);
+        long profileVersion = System.currentTimeMillis();
+        List<Request> queries = getQueries(profileMessage);
+        for(Request request : queries){
+            Integer startRecord = checkPreviousRequests(crawlerLog.getRequests(request.query, searchEngine()));
+            if (startRecord != null) {
+                // set start record field
+                request = new Request(request.golem, request.query, startRecord, request.requested);
+                long requestLogId = crawlerLog.logSearchRequest(profileMessage.getProfileId(), searchEngine(), profileVersion, request);
+                List<Link> foundLinks = getLinks(request);
+                List<Link> linksToCrawl = crawlerLog.getLinksToCrawl(foundLinks);
+                crawlerLog.logReturnedResults(requestLogId, foundLinks.size(), linksToCrawl.size());
+                sendToCrawler(profileMessage.getProfileId(), searchEngine(), requestLogId, linksToCrawl);
+            } else {
+                crawlerLog.incrementCashHits(request.query, searchEngine());
+            }
+        }
+    }
+
+    protected Integer checkPreviousRequests(List<Request> requests){
+        // If there was no previous requests, query the first page of search results
+        if (requests == null || requests.size() < 1){
+            return 0;
+        }
+        Collections.sort(requests, (r1,r2) -> Integer.compare(r1.start, r2.start));
+        // check if previous request is stale
+        if (Months.monthsBetween(requests.get(0).requested, new DateTime()).getMonths() > 1){
+            return 0;
+        }
+        // if we have not read depth enough search results return new start record
+        int prevStartRecord = requests.get(requests.size()-1).start;
+        if (prevStartRecord < SEARCH_MAX_DEPTH_PAGES * getMaxResultsPerPage()) {
+            return prevStartRecord + getMaxResultsPerPage();
+        }
+        // if we have already have all results for this query and these results are up to date
+        return null;
+    }
+
+    private ProfileMessage unpackProfileMessage(Message message){
         ProfileMessage profileMessage = null;
         try {
             profileMessage = jsonMapper.readValue(message.getBody(), ProfileMessage.class);
@@ -64,58 +117,28 @@ public abstract class AbstractSearchEngineClient {
         }
     }
 
-    protected void passResultsToCrawler(SearchResultsMessage msg){
-        try {
-            String json = jsonMapper.writeValueAsString(msg);
-            amqpTemplate.convertAndSend(AmqpConfig.crawlerExchange().getName(), "#", json);
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public List<Query> getQueries(ProfileMessage profileMessage) {
-        final int WORDGRAMS_IN_ONE_QUERY = 5;
-        String initialQuery =
-                (profileMessage.getInitialQuery() != null && profileMessage.getInitialQuery().length() > 0) ?
-                        profileMessage.getInitialQuery() : "";
+    protected List<Request> getQueries(ProfileMessage profileMessage) {
+        String initialQuery = (profileMessage.getInitialQuery() != null) ? profileMessage.getInitialQuery() + " " : "";
         if (profileMessage.getQueryLines() != null && profileMessage.getQueryLines().size() > 0) {
-            List<Query> wordgramQueries = new ArrayList<>();
-            StringJoiner sj = new StringJoiner(" | ","(", ")");
+            List<Request> wordgramQueries = new ArrayList<>();
+            StringJoiner sj = new StringJoiner(" ", initialQuery, "");
             for (List<List<WordForm>> line: profileMessage.getQueryLines()){
                 for(List<WordForm> wordgram: line){
-                    for (WordForm word : wordgram) {
-                        sj.add(word.getWord());
+                    if (searchEngine().containsGolem(wordgram.get(0).getGolem())) {
+                        for (WordForm word : wordgram) {
+                            sj.add(word.getWord());
+                        }
+                        wordgramQueries.add(new Request(wordgram.get(0).getGolem(), sj.toString(), 0, new DateTime()));
+                        sj = new StringJoiner(" ", initialQuery, "");
                     }
-                    if (wordgram.get(0).getGolem() != Golem.UNKNOWN) {
-                        wordgramQueries.add(new Query(wordgram.get(0).getGolem(), sj.toString()));
-                    }
-                    sj = new StringJoiner(" | ","(", ")");
                 }
             }
-            Collections.sort(wordgramQueries, (q1, q2) -> q1.golem.getId() - q2.golem.getId());
-            List<Query> queries = new ArrayList<>();
-            int wordgramCounter = 0;
-            Golem golem = Golem.UNKNOWN;
-            sj = new StringJoiner(" | ","(", ")");
-            for (Query each:wordgramQueries){
-                if (wordgramCounter == 0) golem = each.golem;
-                if (each.golem != golem || wordgramCounter >= WORDGRAMS_IN_ONE_QUERY){
-                    wordgramCounter = 0;
-                    queries.add(new Query(golem, initialQuery + " " + sj.toString()));
-                    sj = new StringJoiner(" | ","(", ")");
-                    golem = each.golem;
-                }
-
-                wordgramCounter++;
-                sj.add(each.query);
-            }
-            queries.add(new Query(golem, initialQuery + " " + sj.toString()));
-            return queries;
+            return wordgramQueries;
         } else if (!"".equals(initialQuery)) {
-            Query query = new Query(predictGolem(initialQuery), initialQuery);
-            return Arrays.asList(query);
+            Request request = new Request(predictGolem(initialQuery), initialQuery.trim(), 0, new DateTime());
+            return Arrays.asList(request);
         } else {
-            return Collections.<Query>emptyList();
+            return Collections.<Request>emptyList();
         }
 
     }

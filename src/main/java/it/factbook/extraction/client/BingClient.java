@@ -2,11 +2,9 @@ package it.factbook.extraction.client;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import it.factbook.extraction.Link;
-import it.factbook.extraction.message.ProfileMessage;
 import it.factbook.extraction.util.WebHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.amqp.core.Message;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.io.IOException;
@@ -19,36 +17,31 @@ import java.util.List;
 /**
  *
  */
-public class BingClient extends AbstractSearchEngineClient implements SearchEngineClient {
-    private static final SearchEngine SEARCH_ENGINE = SearchEngine.BING;
-    private static final Logger log = LoggerFactory.getLogger(BingClient.class);
+public class BingClient extends AbstractSearchEngineClient {
 
     @Value("${bing.client.api.key}")
     private String appKey;
 
     @Override
     protected Logger log() {
-        return log;
+        return LoggerFactory.getLogger(BingClient.class);
     }
 
     @Override
-    public void onMessage(Message message) {
-        ProfileMessage profileMessage = unpackProfileMessage(message);
-        long profileVersion = System.currentTimeMillis();
-        List<Query> queries = getQueries(profileMessage);
-        for(Query query: queries){
-            long requestLogId = crawlerLog.logSearchRequest(profileMessage.getProfileId(), SEARCH_ENGINE, profileVersion, query);
-            List<Link> foundLinks = getLinks(query);
-            List<Link> linksToCrawl = crawlerLog.getLinksToCrawl(foundLinks);
-            crawlerLog.logReturnedResults(requestLogId, foundLinks.size(), linksToCrawl.size());
-            sendToCrawler(profileMessage.getProfileId(), SEARCH_ENGINE, requestLogId, linksToCrawl);
-        }
+    protected SearchEngine searchEngine() {
+        return SearchEngine.BING;
     }
 
-    List<Link> getLinks(Query query){
-        List<Link> links = new ArrayList<>(50);
+    @Override
+    protected int getMaxResultsPerPage() {
+        return 50;
+    }
+
+    @Override
+    protected List<Link> getLinks(Request request){
+        List<Link> links = new ArrayList<>(getMaxResultsPerPage());
         try {
-            JsonNode root = jsonMapper.readTree(WebHelper.getContent(buildUrl(query), null, appKey, appKey));
+            JsonNode root = jsonMapper.readTree(WebHelper.getContent(buildUrl(request), null, appKey, appKey));
             JsonNode results = root.path("d").path("results").get(0).path("Web");
             Iterator<JsonNode> itr = results.elements();
             while (itr.hasNext()) {
@@ -56,31 +49,33 @@ public class BingClient extends AbstractSearchEngineClient implements SearchEngi
                 links.add(new Link(res.path("Url").textValue(),
                         res.path("Title").textValue(),
                         res.path("Description").textValue(),
-                        query.golem));
+                        request.golem));
             }
         } catch (IOException e) {
-            log.error("Error on request: {} ", query.query);
-            log.error("Error info:", e);
+            log().error("Error on request: {} ", request.query);
+            log().error("Error info:", e);
         }
         return links;
     }
 
-    private String buildUrl(Query query){
+    private String buildUrl(Request request){
         String encQuery = null;
         try {
-            encQuery = URLEncoder.encode(query.query, "UTF-8");
+            encQuery = URLEncoder.encode(request.query, "UTF-8");
         } catch (UnsupportedEncodingException e) {
-            log.error("Unsupported Encoding!");
+            log().error("Unsupported Encoding!");
         }
+        // if we request not the first page add start parameter to URL
+        String startParam = (request.start >= getMaxResultsPerPage()) ? "&$skip=" + (request.start + 1)  : "";
         return "https://api.datamarket.azure.com/Bing/Search/Composite?"
 
                 // Common request fields (required)
-                + "Query=%27" + encQuery + "+language:" + query.golem.getMainLang().getCode().toLowerCase() + "%27"
+                + "Query=%27" + encQuery + "+language:" + request.golem.getMainLang().getCode().toLowerCase() + "%27"
                 + "&Sources=%27web%27"
 
                 // Web-specific request fields (optional)
                 //+ "&$top=10"
-                //+ "&$skip=0"
+                + startParam
                 //+ "&Options=%27DisableLocationDetection%2BEnableHighlighting%27 "
 
                 // JSON-specific request fields (optional)
