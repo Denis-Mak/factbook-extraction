@@ -9,6 +9,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
+import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 /**
  *
  */
@@ -23,8 +29,36 @@ public class Start implements Daemon{
 
     private static Start app = new Start();
 
+    private static class TempFileCleaner extends Thread {
+        private static Path tempDir = Paths.get(System.getProperty("java.io.tmpdir"));
+
+        @Override
+        public void run() {
+            try {
+                while (true) {
+                    try (DirectoryStream<Path> stream =
+                                 Files.newDirectoryStream(tempDir, "{wapiti-model-,test,result}*.{bin,crf}")) {
+                        for (Path entry: stream) {
+                            long lastModified = Files.getLastModifiedTime(entry).toMillis();
+                            if (System.currentTimeMillis() - lastModified > 60000) {
+                                Files.deleteIfExists(entry);
+                            }
+                        }
+                    } catch (IOException x) {
+                        System.err.println("TempFileCleaner error");
+                        x.printStackTrace();
+                    }
+                    Thread.sleep(60000);
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private static TempFileCleaner tempFileCleaner = new TempFileCleaner();
+
     public static void main (String[] ars) throws Exception{
-        Start app = new Start();
         app.init();
         app.start();
     }
@@ -81,9 +115,11 @@ public class Start implements Daemon{
         Start.cancelled = false;
         PropertiesConfiguration buildConfig = new PropertiesConfiguration("build.properties");
         buildConfig.load();
+        System.setProperty("http.keepAlive", "false");
         ctx = new AnnotationConfigApplicationContext(Class.forName(buildConfig.getString("build.profile")));
         init();  // init here because windows service starts calling one method
         myThread.start();
+        tempFileCleaner.start();
         log.info("Loaded config: {}", buildConfig.getString("build.profile"));
         log.info("All listners, exchanges and queues raised and ready.");
     }
@@ -97,10 +133,13 @@ public class Start implements Daemon{
         log.info("factbook-it.factbook.extraction stopped");
         myThread.interrupt();
         myThread.join();
+        tempFileCleaner.interrupt();
+        tempFileCleaner.join();
     }
 
     @Override
     public void destroy() {
         myThread = null;
+        tempFileCleaner = null;
     }
 }

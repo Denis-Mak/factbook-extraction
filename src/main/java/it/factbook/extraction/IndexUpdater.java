@@ -24,9 +24,6 @@ import java.util.stream.Collectors;
  */
 @Component
 public class IndexUpdater implements MessageListener{
-    private static ObjectMapper jsonMapper = new ObjectMapper();
-
-    private static final Logger log = LoggerFactory.getLogger(IndexUpdater.class);
 
     @Autowired
     SphinxIndexUpdater sphinxIndexUpdater;
@@ -34,10 +31,16 @@ public class IndexUpdater implements MessageListener{
     @Autowired
     DocumentRepositoryConfig config;
 
+    private static ObjectMapper jsonMapper = new ObjectMapper();
+    static {
+        jsonMapper.registerModule(new JodaModule());
+    }
+
+    private static final Logger log = LoggerFactory.getLogger(IndexUpdater.class);
+
     @Override
     public void onMessage(Message message) {
         try {
-            jsonMapper.registerModule(new JodaModule());
             FactsMessage msg = jsonMapper.readValue(message.getBody(), FactsMessage.class);
             if (msg.getFacts().size() > 0) {
                 log.debug("Received message. Facts count: {}", msg.getFacts().size());

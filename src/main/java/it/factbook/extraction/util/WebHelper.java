@@ -81,13 +81,13 @@ public class WebHelper {
                 }
             });
         }
-        HttpURLConnection c = (HttpURLConnection)myUrl.openConnection();
+        HttpURLConnection connection = (HttpURLConnection)myUrl.openConnection();
         if (userAgent != null) {
             System.setProperty("http.agent", "");
-            c.setRequestProperty("User-Agent", userAgent);
+            connection.setRequestProperty("User-Agent", userAgent);
         }
-        c.setRequestMethod("GET");
-        is = c.getInputStream();
+        connection.setRequestMethod("GET");
+        is = connection.getInputStream();
 
         return TikaInputStream.get(is);
     }

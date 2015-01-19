@@ -31,9 +31,6 @@ import java.util.stream.Collectors;
  */
 @Component
 public class FactSaver implements MessageListener{
-    private static ObjectMapper jsonMapper = new ObjectMapper();
-
-    private static final Logger log = LoggerFactory.getLogger(FactSaver.class);
 
     @Autowired
     FactProcessor factProcessor;
@@ -45,10 +42,14 @@ public class FactSaver implements MessageListener{
     private AmqpTemplate amqpTemplate;
 
     @Autowired
-    private AmqpConfig amqpConfig;
-
-    @Autowired
     private LangDetector langDetector;
+
+    private static ObjectMapper jsonMapper = new ObjectMapper();
+    static {
+        jsonMapper.registerModule(new JodaModule());
+    }
+
+    private static final Logger log = LoggerFactory.getLogger(FactSaver.class);
 
     @Override
     public void onMessage(Message jsonMsg) {
@@ -119,6 +120,8 @@ public class FactSaver implements MessageListener{
                 .title(msg.getTitle())
                 .titleSense(factProcessor.convertToSense(factProcessor.splitWords(msg.getTitle()), msg.getGolem()))
                 .docUrl(WebHelper.getDecodedURL(msg.getUrl()))
+                .docType(msg.getDocType())
+                .published(msg.getPublished())
                 .docLang(langDetector.detectLanguage(msg.getContent()))
                 .golem(msg.getGolem()).build();
     }

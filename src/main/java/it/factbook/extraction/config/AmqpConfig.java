@@ -169,12 +169,13 @@ public class AmqpConfig {
     SimpleMessageListenerContainer crawlerContainer(){
         SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory());
         container.setQueues(crawlerQueue());
-        container.setMessageListener(crawler());
+        container.setMessageListener(new MessageListenerAdapter(crawler(), "onMessage"));
+        container.setMaxConcurrentConsumers(10);
         return container;
     }
 
     @Bean
-    MessageListener crawler(){
+    Crawler crawler(){
         return new Crawler();
     }
 
@@ -196,7 +197,7 @@ public class AmqpConfig {
         SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory());
         container.setQueues(factSaverQueue());
         container.setMessageListener(factSaver());
-    //    container.setMaxConcurrentConsumers(10);
+        container.setMaxConcurrentConsumers(4);
         return container;
     }
 
