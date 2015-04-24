@@ -26,7 +26,7 @@ public class CrawlerTest {
     @Test
     public void testDownloadArticle() throws Exception {
         Metadata metadata = new Metadata();
-        String text =  crawler.parseArticle("http://factsearch.ru", metadata);
+        String text =  crawler.parseArticle("http://nrkmania.ru/topic2307-42.html", metadata);
         //String text = crawler.parseArticle("http://www.ohsu.edu/nod/documents/2009/05-29/Kreitzer%202008.pdf");
         assertTrue(text.length() > 500);
     }

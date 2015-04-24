@@ -66,18 +66,11 @@ public class FactSaverTest {
     }
 
     @Test
-    public void testBuildDocHeader(){
-        Fact docHeader = factSaver.buildDocHeader(documentMessage);
-        assertEquals("1373 875 1415 2359 1583 1415 1949 582", docHeader.getTitleSense());
-        assertEquals("3012755c03eae1d9227f1e666fe0d2a80df11967", docHeader.getTitleHash());
-    }
-
-    @Test
     public void testBuildListOfFact(){
-        List<Fact> facts = factSaver.buildListOfFacts(1, documentMessage);
+        List<Fact> facts = factSaver.buildListOfFacts(documentMessage);
         assertEquals(11, facts.size());
 
-        facts = factSaver.buildListOfFacts(2, documentMessageWithEmptyLines);
+        facts = factSaver.buildListOfFacts(documentMessageWithEmptyLines);
         assertEquals(9, facts.size());
     }
 }

@@ -70,7 +70,7 @@ public class BingClient extends AbstractSearchEngineClient {
         return "https://api.datamarket.azure.com/Bing/Search/Composite?"
 
                 // Common request fields (required)
-                + "Query=%27" + encQuery + "+language:" + request.golem.getMainLang().getCode().toLowerCase() + "%27"
+                + "Query=%27" + encQuery + "+language:" + request.golem.mainLang().getCode().toLowerCase() + "%27"
                 + "&Sources=%27web%27"
 
                 // Web-specific request fields (optional)

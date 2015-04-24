@@ -234,4 +234,7 @@ contextSearch.test.properties
 jdbc.properties
 jdbc.staging.properties
 jdbc.test.properties
+cql.properties
+cql.staging.properties
+cql.test.properties
 src/main/resources/key.p12

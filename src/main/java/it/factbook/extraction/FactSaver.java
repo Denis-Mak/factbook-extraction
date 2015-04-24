@@ -4,14 +4,17 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
 import it.factbook.dictionary.LangDetector;
+import it.factbook.dictionary.Language;
 import it.factbook.extraction.config.AmqpConfig;
 import it.factbook.extraction.message.DocumentMessage;
 import it.factbook.extraction.message.FactsMessage;
 import it.factbook.extraction.util.WebHelper;
+import it.factbook.search.DocType;
 import it.factbook.search.Fact;
 import it.factbook.search.FactProcessor;
 import it.factbook.search.repository.FactAdapter;
 import it.factbook.util.StringUtils;
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.AmqpTemplate;
@@ -24,7 +27,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  *
@@ -65,25 +67,10 @@ public class FactSaver implements MessageListener{
         }
 
         log.debug("Received message. URL: {} \n Title: {}", msg.getUrl(), msg.getTitle());
-        Fact documentHeader = buildDocHeader(msg);
-        long docId = factAdapter.saveDocumentHeader(documentHeader);
-        factAdapter.saveDocumentContent(docId, msg.getContent());
-        factAdapter.appendFacts(buildListOfFacts(docId, msg));
-        List<Fact> factsWithId = factAdapter.getByDocId(docId);
-        List<Fact> factsWithDocHeader = factsWithId.stream()
-                .map(f -> new Fact.Builder(documentHeader)
-                        .id(f.getId())
-                        .content(f.getContent())
-                        .contentSense(f.getContentSense())
-                        .factLang(f.getFactLang())
-                        .docId(f.getDocId())
-                        .docPosition(f.getDocPosition())
-                        .fingerprint(f.getFingerprint())
-                        .factuality(f.getFactuality())
-                        .build())
-                .collect(Collectors.toList());
+        List<Fact> facts = buildListOfFacts(msg);
+        factAdapter.appendFacts(facts);
         FactsMessage factsMessage = new FactsMessage();
-        factsMessage.setFacts(factsWithDocHeader);
+        factsMessage.setFacts(facts);
         passFactsToClusterProcessor(factsMessage);
     }
 
@@ -115,26 +102,21 @@ public class FactSaver implements MessageListener{
         }
     }
 
-    Fact buildDocHeader(DocumentMessage msg){
-        return new Fact.Builder()
-                .title(msg.getTitle())
-                .titleSense(factProcessor.convertToSense(factProcessor.splitWords(msg.getTitle()), msg.getGolem()))
-                .docUrl(WebHelper.getDecodedURL(msg.getUrl()))
-                .docType(msg.getDocType())
-                .published(msg.getPublished())
-                .docLang(langDetector.detectLanguage(msg.getContent()))
-                .golem(msg.getGolem()).build();
-    }
-
-    List<Fact> buildListOfFacts(long docId, DocumentMessage msg){
+    List<Fact> buildListOfFacts(DocumentMessage msg){
         List<Fact> facts = new ArrayList<>();
+        String title = msg.getTitle();
+        String url = WebHelper.getDecodedURL(msg.getUrl());
+        Language language = langDetector.detectLanguage(msg.getContent());
+        DateTime published = msg.getPublished();
+        DocType docType = msg.getDocType();
         int startPos = 0;
         for (String textBlock:msg.getContent().split("\n")){
             if (StringUtils.trimSplitters(textBlock).trim().length() > 0) {
-                List<Fact> factsInBlock = factProcessor.splitDocument(textBlock, docId, msg.getGolem(), startPos);
+                List<Fact> factsInBlock = factProcessor.splitDocument(textBlock, msg.getGolem(), startPos, title,
+                        url, language, published, docType);
                 if (factsInBlock.size() > 0) {
                     facts.addAll(factsInBlock);
-                    startPos = facts.get(facts.size()-1).getDocPosition() + 1;
+                    startPos = facts.get(facts.size()-1).getPos() + 1;
                 }
             }
         }

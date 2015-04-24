@@ -1,14 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="DataSourceManagerImpl" format="xml" hash="1581798259">
+  <component name="DataSourceManagerImpl" format="xml">
     <data-source source="LOCAL" name="MySQL - @localhost" uuid="9664f12d-e20e-47a1-949f-6df8d8ffd4a1">
       <driver-ref>mysql</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>com.mysql.jdbc.Driver</jdbc-driver>
       <jdbc-url>jdbc:mysql://localhost:3306</jdbc-url>
-      <user-name>root</user-name>
-      <schema-pattern>dictionary.* doccache.* extraction.* userdata.*</schema-pattern>
-      <default-schemas>dictionary.* doccache.* extraction.* userdata.*</default-schemas>
       <driver-properties>
         <property name="zeroDateTimeBehavior" value="convertToNull" />
         <property name="tinyInt1isBit" value="false" />
@@ -17,4 +14,3 @@
     </data-source>
   </component>
 </project>
-

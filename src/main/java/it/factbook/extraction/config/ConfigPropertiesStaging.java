@@ -18,4 +18,7 @@ public class ConfigPropertiesStaging extends AbstractConfigProperties {
 
     @Override
     protected String amqpPropertyFile() {return "amqp.staging.properties";}
+
+    @Override
+    protected String cassandraPropertyFile() {return "cql.staging.properties";}
 }

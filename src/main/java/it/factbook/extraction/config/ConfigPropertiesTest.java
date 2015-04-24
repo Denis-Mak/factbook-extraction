@@ -17,4 +17,7 @@ public class ConfigPropertiesTest extends AbstractConfigProperties {
 
     @Override
     protected String amqpPropertyFile() {return "amqp.test.properties";}
+
+    @Override
+    protected String cassandraPropertyFile() {return "cql.test.properties";}
 }

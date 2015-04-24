@@ -1,7 +1,10 @@
 package it.factbook.extraction.config;
 
 import it.factbook.extraction.*;
-import it.factbook.extraction.client.*;
+import it.factbook.extraction.client.BingClient;
+import it.factbook.extraction.client.FarooClient;
+import it.factbook.extraction.client.GoogleClient;
+import it.factbook.extraction.client.YahooClient;
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -9,6 +12,7 @@ import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
+import org.springframework.amqp.remoting.service.AmqpInvokerServiceExporter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -293,4 +297,33 @@ public class AmqpConfig {
     public FactClassifierTrainer factClassifierTrainer(){
         return new FactClassifierTrainer();
     }
+
+    //////////////////////
+    // Tree builder
+    @Bean
+    SimpleMessageListenerContainer treeBuilderRpcContainer(){
+        SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory());
+        container.setQueues(treeBuilderQueue());
+        container.setMessageListener(treeBuilderService());
+        return container;
+    }
+
+    @Bean
+    public Queue treeBuilderQueue() {
+        return new Queue("rpc-tree-builder");
+    }
+
+    @Bean
+    public TreeBuilder treeBuilder() {return new TreeBuilderImpl();}
+
+    @Bean
+    public AmqpInvokerServiceExporter treeBuilderService(){
+        AmqpInvokerServiceExporter serviceExporter = new AmqpInvokerServiceExporter();
+        serviceExporter.setServiceInterface(TreeBuilder.class);
+        serviceExporter.setService(treeBuilder());
+        serviceExporter.setAmqpTemplate(rabbitTemplate());
+        return serviceExporter;
+    }
+
+
 }

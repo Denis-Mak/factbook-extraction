@@ -1,0 +1,5 @@
+cassandra.contactpoints=Your.cassandra.servers
+cassandra.port=9042
+cassandra.user=cassandra.user
+cassandra.password=cassandra.user.pass
+cassandra.keyspace=keyspace.name

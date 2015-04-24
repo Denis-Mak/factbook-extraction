@@ -17,4 +17,7 @@ public class ConfigPropertiesProduction extends AbstractConfigProperties {
 
     @Override
     protected String amqpPropertyFile() {return "amqp.properties";}
+
+    @Override
+    protected String cassandraPropertyFile() {return "cql.properties";}
 }

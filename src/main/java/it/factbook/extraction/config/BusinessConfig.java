@@ -1,5 +1,8 @@
 package it.factbook.extraction.config;
 
+import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.PlainTextAuthProvider;
+import com.datastax.driver.core.Session;
 import com.jolbox.bonecp.BoneCPDataSource;
 import it.factbook.dictionary.LangDetector;
 import it.factbook.dictionary.LangDetectorCybozuImpl;
@@ -10,6 +13,8 @@ import it.factbook.dictionary.repository.WordFormAdapter;
 import it.factbook.dictionary.repository.jdbc.StemAdapterJdbcImpl;
 import it.factbook.dictionary.repository.jdbc.WordFormAdapterJdbcImpl;
 import it.factbook.extraction.CrawlerLog;
+import it.factbook.extraction.TreeBuilder;
+import it.factbook.extraction.TreeBuilderImpl;
 import it.factbook.search.FactProcessor;
 import it.factbook.search.SearchProfileUpdater;
 import it.factbook.search.classifier.Classifier;
@@ -19,8 +24,8 @@ import it.factbook.search.classifier.features.MaxTreeDepthHandler;
 import it.factbook.search.repository.ClassifierAdapter;
 import it.factbook.search.repository.DocumentRepositoryConfig;
 import it.factbook.search.repository.FactAdapter;
+import it.factbook.search.repository.cassandra.FactAdapterCassandraImpl;
 import it.factbook.search.repository.jdbc.ClassifierAdapterImpl;
-import it.factbook.search.repository.jdbc.FactAdapterJdbcImpl;
 import it.factbook.sphinx.SphinxIndexUpdater;
 import it.factbook.util.TextSplitter;
 import it.factbook.util.TextSplitterOpenNlpRuImpl;
@@ -73,6 +78,22 @@ public class BusinessConfig {
     @Value("${csSqlPort}")
     private String csSqlPort;
 
+    @Value("${cassandra.contactpoints}")
+    private String cassandraPoints;
+
+    @Value("${cassandra.port}")
+    private String cassandraPort;
+
+    @Value("${cassandra.keyspace}")
+    private String cassandraKeyspace;
+
+    @Value("${cassandra.user}")
+    private String cassandraUser;
+
+    @Value("${cassandra.password}")
+    private String cassandraPass;
+
+
     //Database datasources
     @Bean (name = "doccacheDataSource")
     public DataSource doccacheDataSource() {
@@ -119,6 +140,17 @@ public class BusinessConfig {
         return dataSource;
     }
 
+    @Bean
+    @Scope(ConfigurableBeanFactory.SCOPE_SINGLETON)
+    public Session session(){
+        Cluster cluster = Cluster.builder()
+                        .addContactPoints(cassandraPoints.split(","))
+                        .withPort(Integer.parseInt(cassandraPort))
+                        .withAuthProvider(new PlainTextAuthProvider(cassandraUser, cassandraPass))
+                        .build();
+        return cluster.connect(cassandraKeyspace);
+    }
+
     @Bean(initMethod = "init")
     public static DocumentRepositoryConfig documentRepositoryConfig(){
         return new DocumentRepositoryConfig();
@@ -131,7 +163,7 @@ public class BusinessConfig {
 
     @Bean
     @Scope(ConfigurableBeanFactory.SCOPE_SINGLETON)
-    public FactAdapter factAdapter() {return new FactAdapterJdbcImpl();}
+    public FactAdapter factAdapter() {return new FactAdapterCassandraImpl();}
 
     @Bean
     @Scope(ConfigurableBeanFactory.SCOPE_SINGLETON)
@@ -185,4 +217,5 @@ public class BusinessConfig {
     public ClassifierFeature.BeanInjector beanInjector(){
         return new ClassifierFeature.BeanInjector();
     }
+
 }

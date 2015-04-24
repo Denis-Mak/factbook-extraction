@@ -15,6 +15,7 @@ public abstract class AbstractConfigProperties {
     protected abstract String dbPropertyFile();
     protected abstract String sphinxPropertyFile();
     protected abstract String amqpPropertyFile();
+    protected abstract String cassandraPropertyFile();
 
     @Bean
     public PropertySourcesPlaceholderConfigurer propertiesPlaceholderConfigurer(){
@@ -23,6 +24,7 @@ public abstract class AbstractConfigProperties {
                 new ClassPathResource(dbPropertyFile()),
                 new ClassPathResource(sphinxPropertyFile()),
                 new ClassPathResource(amqpPropertyFile()),
+                new ClassPathResource(cassandraPropertyFile())
         };
         bean.setLocations(resourceLocations);
         return bean;

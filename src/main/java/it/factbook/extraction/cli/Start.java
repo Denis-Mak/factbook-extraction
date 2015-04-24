@@ -1,5 +1,6 @@
 package it.factbook.extraction.cli;
 
+import com.datastax.driver.core.Session;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.daemon.Daemon;
 import org.apache.commons.daemon.DaemonContext;
@@ -129,6 +130,9 @@ public class Start implements Daemon{
     @Override
     public void stop() throws Exception {
         Start.cancelled = true;
+        Session session = ctx.getBean(Session.class);
+        session.close();
+        session.getCluster().close();
         ctx.close();
         log.info("factbook-it.factbook.extraction stopped");
         myThread.interrupt();

@@ -80,7 +80,7 @@ public class GoogleClient extends AbstractSearchEngineClient{
         // if we request not the first page add start parameter to URL
         String startParam = (request.start >= getMaxResultsPerPage()) ? "&start=" + (request.start + 1)  : "";
         return "https://www.googleapis.com/customsearch/v1?key=" + appKey +
-                "&lr=lang_" + request.golem.getMainLang().getCode().toLowerCase() +
+                "&lr=lang_" + request.golem.mainLang().getCode().toLowerCase() +
                 "&cx=" + userId + ":" + engineId +
                 "&q=" + encQuery +
                 startParam;
