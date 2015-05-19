@@ -31,8 +31,10 @@ public class TreeBuilderImpl implements TreeBuilder{
         for (PhraseTree<WordForm> tree: treeParser.parse(golem, text)){
             treeStr += FactProcessor.printTree(tree);
             for (WordForm[] pair: profileUpdater.findRepresentativePairs(tree)){
+                int[] mergedMem = treeParser.mergeMems(golem, pair[0].getMem(), pair[1].getMem());
+                Arrays.sort(mergedMem);
                 treeStr += "{" + pair[0].getWord() + ", " + pair[1].getWord() + "} -> " +
-                        Arrays.toString(treeParser.mergeMems(golem, pair[0].getMem(), pair[1].getMem())) + "\n";
+                        Arrays.toString(mergedMem) + "\n";
             }
             treeStr += "\n";
         }
