@@ -33,7 +33,6 @@ public class ProfileUpdaterMsgHandler {
             SearchProfile newProfile =
                     new SearchProfile.Builder(profileUpdater.update(msg.getSearchProfile(), msg.getFact()))
                             .updated(new DateTime())
-                            .kept(msg.getSearchProfile().getKept() + 1)
                             .build();
             jsonToReturn = jsonMapper.writeValueAsString(newProfile);
         } catch (IOException e) {
