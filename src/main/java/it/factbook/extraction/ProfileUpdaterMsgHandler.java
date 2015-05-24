@@ -30,10 +30,13 @@ public class ProfileUpdaterMsgHandler {
         try {
             jsonMapper.registerModule(new JodaModule());
             ProfileUpdateMessage msg = jsonMapper.readValue(message, ProfileUpdateMessage.class);
+            log.debug("Profile to update {}", msg.getSearchProfile());
             SearchProfile newProfile =
                     new SearchProfile.Builder(profileUpdater.update(msg.getSearchProfile(), msg.getFact()))
                             .updated(new DateTime())
                             .build();
+
+            log.debug("New profile {}", newProfile);
             jsonToReturn = jsonMapper.writeValueAsString(newProfile);
         } catch (IOException e) {
             log.error("Error during unpack ProfileUpdateMessage: {}", e);

@@ -13,8 +13,6 @@ import it.factbook.dictionary.repository.WordFormAdapter;
 import it.factbook.dictionary.repository.jdbc.StemAdapterJdbcImpl;
 import it.factbook.dictionary.repository.jdbc.WordFormAdapterJdbcImpl;
 import it.factbook.extraction.CrawlerLog;
-import it.factbook.extraction.TreeBuilder;
-import it.factbook.extraction.TreeBuilderImpl;
 import it.factbook.search.FactProcessor;
 import it.factbook.search.SearchProfileUpdater;
 import it.factbook.search.classifier.Classifier;
@@ -26,6 +24,7 @@ import it.factbook.search.repository.DocumentRepositoryConfig;
 import it.factbook.search.repository.FactAdapter;
 import it.factbook.search.repository.cassandra.FactAdapterCassandraImpl;
 import it.factbook.search.repository.jdbc.ClassifierAdapterImpl;
+import it.factbook.search.repository.jdbc.SphinxSliceIndexAdapter;
 import it.factbook.sphinx.SphinxIndexUpdater;
 import it.factbook.util.TextSplitter;
 import it.factbook.util.TextSplitterOpenNlpRuImpl;
@@ -95,6 +94,11 @@ public class BusinessConfig {
 
 
     //Database datasources
+    private void setCommonDataSourceParams(BoneCPDataSource dataSource){
+        dataSource.setIdleConnectionTestPeriodInMinutes(10);
+        dataSource.setConnectionTestStatement("SELECT 1");
+    }
+
     @Bean (name = "doccacheDataSource")
     public DataSource doccacheDataSource() {
         BoneCPDataSource dataSource = new BoneCPDataSource();
@@ -113,6 +117,7 @@ public class BusinessConfig {
         dataSource.setJdbcUrl(jdbcExtractionUrl);
         dataSource.setUsername(jdbcExtractionUsername);
         dataSource.setPassword(jdbcExtractionPassword);
+
 
         return dataSource;
     }
@@ -206,6 +211,10 @@ public class BusinessConfig {
     @Bean
     @Scope(ConfigurableBeanFactory.SCOPE_SINGLETON)
     public ClassifierAdapter classifierAdapter() {return new ClassifierAdapterImpl(doccacheDataSource());}
+
+    @Bean
+    @Scope(ConfigurableBeanFactory.SCOPE_SINGLETON)
+    public SphinxSliceIndexAdapter sphinxSliceIndexAdapter() {return new SphinxSliceIndexAdapter();}
 
     @Bean
     @Scope

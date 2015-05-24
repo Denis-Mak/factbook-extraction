@@ -13,6 +13,7 @@ import it.factbook.search.DocType;
 import it.factbook.search.Fact;
 import it.factbook.search.FactProcessor;
 import it.factbook.search.repository.FactAdapter;
+import it.factbook.search.repository.jdbc.SphinxSliceIndexAdapter;
 import it.factbook.util.StringUtils;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -46,6 +47,9 @@ public class FactSaver implements MessageListener{
     @Autowired
     private LangDetector langDetector;
 
+    @Autowired
+    private SphinxSliceIndexAdapter sphinxSliceIndexAdapter;
+
     private static ObjectMapper jsonMapper = new ObjectMapper();
     static {
         jsonMapper.registerModule(new JodaModule());
@@ -69,6 +73,7 @@ public class FactSaver implements MessageListener{
         log.debug("Received message. URL: {} \n Title: {}", msg.getUrl(), msg.getTitle());
         List<Fact> facts = buildListOfFacts(msg);
         factAdapter.appendFacts(facts);
+        facts.stream().forEach(fact -> sphinxSliceIndexAdapter.addFactToIndex(fact.getUrlObj(),fact.getPos(),fact.getGolem()));
         FactsMessage factsMessage = new FactsMessage();
         factsMessage.setFacts(facts);
         passFactsToClusterProcessor(factsMessage);
