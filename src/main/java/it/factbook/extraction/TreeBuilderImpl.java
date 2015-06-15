@@ -6,6 +6,7 @@ import it.factbook.dictionary.parse.TreeParser;
 import it.factbook.dictionary.tree.PhraseTree;
 import it.factbook.search.FactProcessor;
 import it.factbook.search.SearchProfileUpdater;
+import it.factbook.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,16 +29,18 @@ public class TreeBuilderImpl implements TreeBuilder{
 
     public String getTreeAsString(Golem golem, String text){
         String treeStr = "";
+        long startParsing = System.nanoTime();
+        log.debug("Start parsing phrase {}", text);
         for (PhraseTree<WordForm> tree: treeParser.parse(golem, text)){
             treeStr += FactProcessor.printTree(tree);
             for (WordForm[] pair: profileUpdater.findRepresentativePairs(tree)){
                 int[] mergedMem = treeParser.mergeMems(golem, pair[0].getMem(), pair[1].getMem());
-                Arrays.sort(mergedMem);
                 treeStr += "{" + pair[0].getWord() + ", " + pair[1].getWord() + "} -> " +
                         Arrays.toString(mergedMem) + "\n";
             }
             treeStr += "\n";
         }
+        log.debug("Parsing time {} msec, phrase {}", Utils.durationFormatted(startParsing),text);
         return treeStr;
     }
 }

@@ -22,7 +22,9 @@ import it.factbook.search.classifier.features.MaxTreeDepthHandler;
 import it.factbook.search.repository.ClassifierAdapter;
 import it.factbook.search.repository.DocumentRepositoryConfig;
 import it.factbook.search.repository.FactAdapter;
+import it.factbook.search.repository.SemanticSearch;
 import it.factbook.search.repository.cassandra.FactAdapterCassandraImpl;
+import it.factbook.search.repository.cassandra.SemanticSearchCassandraImpl;
 import it.factbook.search.repository.jdbc.ClassifierAdapterImpl;
 import it.factbook.search.repository.jdbc.SphinxSliceIndexAdapter;
 import it.factbook.sphinx.SphinxIndexUpdater;
@@ -227,4 +229,9 @@ public class BusinessConfig {
         return new ClassifierFeature.BeanInjector();
     }
 
+    @Bean
+    @Scope(ConfigurableBeanFactory.SCOPE_SINGLETON)
+    public SemanticSearch semanticSearch(){
+        return new SemanticSearchCassandraImpl();
+    }
 }

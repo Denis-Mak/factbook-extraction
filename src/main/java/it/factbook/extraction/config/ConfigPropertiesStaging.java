@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Import;
  *
  */
 @Configuration
-@Import({AmqpConfig.class, BusinessConfig.class})
+@Import({AmqpConfig.class, BusinessConfigInMemory.class})
 public class ConfigPropertiesStaging extends AbstractConfigProperties {
 
     @Override
