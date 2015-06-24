@@ -39,7 +39,7 @@ public class FactClassifierTrainer{
             log.error("Error during unpack DocumentMessage: ", e);
         }
         if (msg.getFacts() != null) {
-            classifier.tweakClassifier(msg.getFacts(), category);
+            //classifier.tweakClassifier(msg.getFacts(), category);
         }
     }
 }

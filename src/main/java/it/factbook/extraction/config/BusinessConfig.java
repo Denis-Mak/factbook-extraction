@@ -16,9 +16,6 @@ import it.factbook.extraction.CrawlerLog;
 import it.factbook.search.FactProcessor;
 import it.factbook.search.SearchProfileUpdater;
 import it.factbook.search.classifier.Classifier;
-import it.factbook.search.classifier.ClassifierFeature;
-import it.factbook.search.classifier.features.ClassifierFeatureHandler;
-import it.factbook.search.classifier.features.MaxTreeDepthHandler;
 import it.factbook.search.repository.ClassifierAdapter;
 import it.factbook.search.repository.DocumentRepositoryConfig;
 import it.factbook.search.repository.FactAdapter;
@@ -97,6 +94,7 @@ public class BusinessConfig {
 
     //Database datasources
     private void setCommonDataSourceParams(BoneCPDataSource dataSource){
+        dataSource.setDriverClass("com.mysql.jdbc.Driver");
         dataSource.setIdleConnectionTestPeriodInMinutes(10);
         dataSource.setConnectionTestStatement("SELECT 1");
     }
@@ -104,7 +102,7 @@ public class BusinessConfig {
     @Bean (name = "doccacheDataSource")
     public DataSource doccacheDataSource() {
         BoneCPDataSource dataSource = new BoneCPDataSource();
-        dataSource.setDriverClass("com.mysql.jdbc.Driver");
+        setCommonDataSourceParams(dataSource);
         dataSource.setJdbcUrl(jdbcDoccacheUrl);
         dataSource.setUsername(jdbcDoccacheUsername);
         dataSource.setPassword(jdbcDoccachePassword);
@@ -115,7 +113,7 @@ public class BusinessConfig {
     @Bean (name = "extractionDataSource")
     public DataSource extractionDataSource() {
         BoneCPDataSource dataSource = new BoneCPDataSource();
-        dataSource.setDriverClass("com.mysql.jdbc.Driver");
+        setCommonDataSourceParams(dataSource);
         dataSource.setJdbcUrl(jdbcExtractionUrl);
         dataSource.setUsername(jdbcExtractionUsername);
         dataSource.setPassword(jdbcExtractionPassword);
@@ -127,7 +125,7 @@ public class BusinessConfig {
     @Bean (name = "dictionaryDataSource")
     public DataSource dictionaryDataSource() {
         BoneCPDataSource dataSource = new BoneCPDataSource();
-        dataSource.setDriverClass("com.mysql.jdbc.Driver");
+        setCommonDataSourceParams(dataSource);
         dataSource.setJdbcUrl(jdbcDictionaryUrl);
         dataSource.setUsername(jdbcDictionaryUsername);
         dataSource.setPassword(jdbcDictionaryPassword);
@@ -139,7 +137,7 @@ public class BusinessConfig {
     @Bean (name = {"sphinxDataSource", "sphinxQlConnection"})
     public DataSource sphinxDataSource() {
         BoneCPDataSource dataSource = new BoneCPDataSource();
-        dataSource.setDriverClass("com.mysql.jdbc.Driver");
+        setCommonDataSourceParams(dataSource);
         dataSource.setJdbcUrl("jdbc:mysql://" + csHost + ":" + csSqlPort + "/");
         dataSource.setUsername("");
         dataSource.setPassword("");
@@ -217,17 +215,6 @@ public class BusinessConfig {
     @Bean
     @Scope(ConfigurableBeanFactory.SCOPE_SINGLETON)
     public SphinxSliceIndexAdapter sphinxSliceIndexAdapter() {return new SphinxSliceIndexAdapter();}
-
-    @Bean
-    @Scope
-    public ClassifierFeatureHandler maxTreeDepthFeatureHandler(){
-        return new MaxTreeDepthHandler();
-    }
-
-    @Bean
-    public ClassifierFeature.BeanInjector beanInjector(){
-        return new ClassifierFeature.BeanInjector();
-    }
 
     @Bean
     @Scope(ConfigurableBeanFactory.SCOPE_SINGLETON)
