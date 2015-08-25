@@ -24,7 +24,7 @@ import it.factbook.search.repository.cassandra.FactAdapterCassandraImpl;
 import it.factbook.search.repository.cassandra.SemanticSearchCassandraImpl;
 import it.factbook.search.repository.jdbc.ClassifierAdapterImpl;
 import it.factbook.search.repository.jdbc.SphinxSliceIndexAdapter;
-import it.factbook.sphinx.SphinxIndexUpdater;
+import it.factbook.search.repository.sphinx.SphinxIndexUpdater;
 import it.factbook.util.TextSplitter;
 import it.factbook.util.TextSplitterOpenNlpRuImpl;
 import org.springframework.beans.factory.annotation.Value;

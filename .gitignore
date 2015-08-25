@@ -238,4 +238,7 @@ jdbc.test.properties
 cql.properties
 cql.staging.properties
 cql.test.properties
+searchEngine.properties
+searchEngine.staging.properties
+searchEngine.test.properties
 src/main/resources/key.p12

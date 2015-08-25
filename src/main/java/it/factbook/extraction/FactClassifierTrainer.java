@@ -24,11 +24,11 @@ public class FactClassifierTrainer{
     Classifier classifier;
 
     public void onMessageHam(String jsonMsg) {
-        processMessage(jsonMsg, FactCategory.HAM);
+       // processMessage(jsonMsg, FactCategory.HAM);
     }
 
     public void onMessageGarbage(String jsonMsg) {
-        processMessage(jsonMsg, FactCategory.GARBAGE);
+       // processMessage(jsonMsg, FactCategory.GARBAGE);
     }
 
     private void processMessage(String jsonMsg, FactCategory category){
@@ -39,7 +39,7 @@ public class FactClassifierTrainer{
             log.error("Error during unpack DocumentMessage: ", e);
         }
         if (msg.getFacts() != null) {
-            //classifier.tweakClassifier(msg.getFacts(), category);
+            classifier.tweakClassifier(msg.getFacts(), category);
         }
     }
 }
