@@ -6,7 +6,7 @@ import it.factbook.dictionary.Golem;
 import it.factbook.extraction.message.FactsMessage;
 import it.factbook.search.Fact;
 import it.factbook.search.repository.DocumentRepositoryConfig;
-import it.factbook.sphinx.SphinxIndexUpdater;
+import it.factbook.search.repository.sphinx.SphinxIndexUpdater;
 import it.factbook.util.BitUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

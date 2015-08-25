@@ -13,7 +13,7 @@ public class ConfigPropertiesProduction extends AbstractConfigProperties {
     protected String dbPropertyFile() {return "jdbc.properties"; }
 
     @Override
-    protected String sphinxPropertyFile() {return "contextSearch.properties"; }
+    protected String sphinxPropertyFile() {return "searchEngine.properties"; }
 
     @Override
     protected String amqpPropertyFile() {return "amqp.properties";}

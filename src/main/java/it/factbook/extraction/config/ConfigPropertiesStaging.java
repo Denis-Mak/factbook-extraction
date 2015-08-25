@@ -14,7 +14,7 @@ public class ConfigPropertiesStaging extends AbstractConfigProperties {
     protected String dbPropertyFile() {return "jdbc.staging.properties"; }
 
     @Override
-    protected String sphinxPropertyFile() {return "contextSearch.staging.properties"; }
+    protected String sphinxPropertyFile() {return "searchEngine.staging.properties"; }
 
     @Override
     protected String amqpPropertyFile() {return "amqp.staging.properties";}
