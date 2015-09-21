@@ -1,8 +1,6 @@
 package it.factbook.extraction.config;
 
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.PlainTextAuthProvider;
-import com.datastax.driver.core.Session;
+import com.datastax.driver.core.*;
 import com.jolbox.bonecp.BoneCPDataSource;
 import it.factbook.dictionary.LangDetector;
 import it.factbook.dictionary.LangDetectorCybozuImpl;

@@ -13,7 +13,7 @@ public class ConfigPropertiesTest extends AbstractConfigProperties {
     protected String dbPropertyFile() {return "jdbc.test.properties"; }
 
     @Override
-    protected String sphinxPropertyFile() {return "searchEngine.test.properties"; }
+    protected String searchEnginePropertyFile() {return "searchEngine.test.properties"; }
 
     @Override
     protected String amqpPropertyFile() {return "amqp.test.properties";}

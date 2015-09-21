@@ -48,12 +48,6 @@ public class FactSaver implements MessageListener{
     @Autowired
     private LangDetector langDetector;
 
-    @Autowired
-    private SphinxSliceIndexAdapter sphinxSliceIndexAdapter;
-
-    @Autowired
-    private SemanticSearch semanticSearch;
-
     private static ObjectMapper jsonMapper = new ObjectMapper();
     static {
         jsonMapper.registerModule(new JodaModule());
@@ -77,12 +71,7 @@ public class FactSaver implements MessageListener{
         log.debug("Received message. URL: {} \n Title: {}", msg.getUrl(), msg.getTitle());
         List<Fact> facts = buildListOfFacts(msg);
         factAdapter.appendFacts(facts);
-        // update cassandra indexes
-        facts.stream().forEach(
-                fact -> {
-                    sphinxSliceIndexAdapter.addFactToIndex(fact.getUrlObj(), fact.getPos(), fact.getGolem());
-                    semanticSearch.updateIndex(fact);
-                });
+
         FactsMessage factsMessage = new FactsMessage();
         factsMessage.setFacts(facts);
         passFactsToClusterProcessor(factsMessage);

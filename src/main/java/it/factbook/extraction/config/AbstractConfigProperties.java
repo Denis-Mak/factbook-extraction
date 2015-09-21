@@ -13,7 +13,7 @@ import org.springframework.core.io.Resource;
 @Configuration
 public abstract class AbstractConfigProperties {
     protected abstract String dbPropertyFile();
-    protected abstract String sphinxPropertyFile();
+    protected abstract String searchEnginePropertyFile();
     protected abstract String amqpPropertyFile();
     protected abstract String cassandraPropertyFile();
 
@@ -22,7 +22,7 @@ public abstract class AbstractConfigProperties {
         PropertySourcesPlaceholderConfigurer bean = new PropertySourcesPlaceholderConfigurer();
         Resource[] resourceLocations = new Resource[] {
                 new ClassPathResource(dbPropertyFile()),
-                new ClassPathResource(sphinxPropertyFile()),
+                new ClassPathResource(searchEnginePropertyFile()),
                 new ClassPathResource(amqpPropertyFile()),
                 new ClassPathResource(cassandraPropertyFile())
         };
@@ -33,7 +33,7 @@ public abstract class AbstractConfigProperties {
     @Bean
     public PropertiesFactoryBean propertiesHolder(){
         PropertiesFactoryBean bean = new PropertiesFactoryBean();
-        bean.setLocation(new ClassPathResource(sphinxPropertyFile()));
+        bean.setLocation(new ClassPathResource(searchEnginePropertyFile()));
         return bean;
     }
 

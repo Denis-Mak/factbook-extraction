@@ -25,7 +25,7 @@
                             <include>**/*.xml</include>
                             <include>**/amqp.properties</include>
                             <include>**/build.properties</include>
-                            <include>**/contextSearch.properties</include>
+                            <include>**/searchEngine.properties</include>
                             <include>**/cql.properties</include>
                             <include>**/jdbc.properties</include>
                         </includes>
@@ -88,7 +88,7 @@
 
         <spring.version>4.0.5.RELEASE</spring.version>
         <spring.rabbit.version>1.3.5.RELEASE</spring.rabbit.version>
-        <spring-cql.version>1.1.2.RELEASE</spring-cql.version>
+        <spring-cql.version>1.3.0.RELEASE</spring-cql.version>
 
         <jackson.version>2.3.3</jackson.version>
         <tika.version>1.6-CUSTOM</tika.version>
