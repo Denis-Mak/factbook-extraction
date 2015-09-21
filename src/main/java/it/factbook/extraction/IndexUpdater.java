@@ -6,6 +6,8 @@ import it.factbook.dictionary.Golem;
 import it.factbook.extraction.message.FactsMessage;
 import it.factbook.search.Fact;
 import it.factbook.search.repository.DocumentRepositoryConfig;
+import it.factbook.search.repository.SemanticSearch;
+import it.factbook.search.repository.jdbc.SphinxSliceIndexAdapter;
 import it.factbook.search.repository.sphinx.SphinxIndexUpdater;
 import it.factbook.util.BitUtils;
 import org.slf4j.Logger;
@@ -29,6 +31,12 @@ public class IndexUpdater implements MessageListener{
     SphinxIndexUpdater sphinxIndexUpdater;
 
     @Autowired
+    private SphinxSliceIndexAdapter sphinxSliceIndexAdapter;
+
+    @Autowired
+    private SemanticSearch semanticSearch;
+
+    @Autowired
     DocumentRepositoryConfig config;
 
     private static ObjectMapper jsonMapper = new ObjectMapper();
@@ -49,6 +57,12 @@ public class IndexUpdater implements MessageListener{
                         .filter(f -> BitUtils.convertToInt(f.getFingerprint()) > 0)
                         .collect(Collectors.toList());
                 sphinxIndexUpdater.updateIndex(factsToInsert, config.rtIndexes.get(golem).get(0));
+                // update cassandra indexes
+                factsToInsert.stream().forEach(
+                        fact -> {
+                            sphinxSliceIndexAdapter.addFactToIndex(fact.getUrlObj(), fact.getPos(), fact.getGolem());
+                            semanticSearch.updateIndex(fact);
+                        });
             }
         } catch (IOException e) {
             log.error("Error during unpack DocumentMessage: {}", e);
