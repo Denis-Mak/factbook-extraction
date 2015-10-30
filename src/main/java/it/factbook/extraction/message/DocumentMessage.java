@@ -8,7 +8,7 @@ import org.apache.tika.metadata.TikaCoreProperties;
 import org.joda.time.DateTime;
 
 /**
- *
+ * Contains page article and its properties
  */
 public class DocumentMessage {
     private String title;
@@ -47,6 +47,10 @@ public class DocumentMessage {
         }
     }
 
+    /**
+     *
+     * @return title of the page
+     */
     public String getTitle() {
         return title;
     }
@@ -55,6 +59,10 @@ public class DocumentMessage {
         this.title = title;
     }
 
+    /**
+     *
+     * @return url of the page as a string
+     */
     public String getUrl() {
         return url;
     }
@@ -63,6 +71,10 @@ public class DocumentMessage {
         this.url = url;
     }
 
+    /**
+     *
+     * @return main article of the page
+     */
     public String getContent() {
         return content;
     }
@@ -71,6 +83,10 @@ public class DocumentMessage {
         this.content = content;
     }
 
+    /**
+     *
+     * @return dictionary to parse the article
+     */
     public Golem getGolem() {
         return golem;
     }
@@ -79,6 +95,10 @@ public class DocumentMessage {
         this.golem = golem;
     }
 
+    /**
+     *
+     * @return published date of the article
+     */
     public DateTime getPublished() {
         return published;
     }
@@ -87,6 +107,10 @@ public class DocumentMessage {
         this.published = published;
     }
 
+    /**
+     *
+     * @return document type of the article as {@link DocType} value
+     */
     public DocType getDocType() {
         return docType;
     }

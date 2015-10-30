@@ -22,23 +22,23 @@ public abstract class AbstractSearchEngineClientTest {
 
     @Test
     public void checkPreviousResults() {
-        assertEquals(new Integer(0), getClient().checkPreviousRequests(Collections.<Request>emptyList()));
+        assertEquals(new Integer(0), getClient().getStartRecordNm(Collections.<Request>emptyList()));
 
         List<Request> requestList = new ArrayList<>(4);
         requestList.add(new Request(Golem.WIKI_EN, "query", 0, new DateTime()));
         requestList.add(new Request(Golem.WIKI_EN, "query", getClient().getMaxResultsPerPage(), new DateTime()));
-        assertEquals(new Integer(2 * getClient().getMaxResultsPerPage()), getClient().checkPreviousRequests(requestList));
+        assertEquals(new Integer(2 * getClient().getMaxResultsPerPage()), getClient().getStartRecordNm(requestList));
 
         requestList.add(new Request(Golem.WIKI_EN, "query", 3 * getClient().getMaxResultsPerPage(), new DateTime()));
-        assertEquals(null, getClient().checkPreviousRequests(requestList));
+        assertEquals(null, getClient().getStartRecordNm(requestList));
 
         requestList.add(new Request(Golem.WIKI_EN, "query", 4 * getClient().getMaxResultsPerPage(), new DateTime()));
-        assertEquals(null, getClient().checkPreviousRequests(requestList));
+        assertEquals(null, getClient().getStartRecordNm(requestList));
 
         requestList = new ArrayList<>(2);
         requestList.add(new Request(Golem.WIKI_EN, "query", 0, new DateTime().minusMonths(2)));
         requestList.add(new Request(Golem.WIKI_EN, "query", getClient().getMaxResultsPerPage(), new DateTime()));
-        assertEquals(new Integer(0), getClient().checkPreviousRequests(requestList));
+        assertEquals(new Integer(0), getClient().getStartRecordNm(requestList));
     }
 
     @Test

@@ -15,7 +15,8 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- *
+ * Implements search engine client for the <a href="http://www.bing.com/">Bing</a> search engine.
+ * See the <a href="http://msdn.microsoft.com/en-us/library/dd251056.aspx">description of API</a>
  */
 public class BingClient extends AbstractSearchEngineClient {
 
@@ -37,6 +38,12 @@ public class BingClient extends AbstractSearchEngineClient {
         return 50;
     }
 
+    /**
+     * Runs HTTP request using {@link WebHelper#getContent(String, String, String, String)} and parse results.
+     *
+     * @param request a query to the search engine
+     * @return a list of links or empty list is nothing was found
+     */
     @Override
     protected List<Link> getLinks(Request request){
         List<Link> links = new ArrayList<>(getMaxResultsPerPage());
@@ -58,19 +65,19 @@ public class BingClient extends AbstractSearchEngineClient {
         return links;
     }
 
+    /**
+     * Builds Bing API request URL.
+     *
+     * @param request search query
+     * @return HTTP request
+     */
     private String buildUrl(Request request){
-        String encQuery = null;
-        try {
-            encQuery = URLEncoder.encode(request.query, "UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            log().error("Unsupported Encoding!");
-        }
-        // if we request not the first page add start parameter to URL
+        // if we are requesting not the first page add start parameter to URL
         String startParam = (request.start >= getMaxResultsPerPage()) ? "&$skip=" + (request.start + 1)  : "";
         return "https://api.datamarket.azure.com/Bing/Search/Composite?"
 
                 // Common request fields (required)
-                + "Query=%27" + encQuery + "+language:" + request.golem.mainLang().getCode().toLowerCase() + "%27"
+                + "Query=%27" + encodeQuery(request) + "+language:" + request.golem.mainLang().getCode().toLowerCase() + "%27"
                 + "&Sources=%27web%27"
 
                 // Web-specific request fields (optional)

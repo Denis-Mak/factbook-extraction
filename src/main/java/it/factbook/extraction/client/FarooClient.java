@@ -16,7 +16,8 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- *
+ * Implements search engine client for the <a href="http://www.faroo.com/">Faroo</a> search engine.
+ * See the <a href="http://www.faroo.com/hp/api/api.html">description of API</a>
  */
 @Component
 public class FarooClient extends AbstractSearchEngineClient{
@@ -41,6 +42,12 @@ public class FarooClient extends AbstractSearchEngineClient{
 
     private static long lastAccessed = 0;
 
+    /**
+     * Runs HTTP request using {@link WebHelper#getContent(String)} and parse results.
+     *
+     * @param request a query to the search engine
+     * @return a list of links or empty list is nothing was found
+     */
     @Override
     protected List<Link> getLinks(Request request){
         List<Link> links = new ArrayList<>(getMaxResultsPerPage());
@@ -62,20 +69,23 @@ public class FarooClient extends AbstractSearchEngineClient{
         return links;
     }
 
+    /**
+     * Builds Faroo API request URL.
+     *
+     * @param request search query
+     * @return HTTP request
+     */
     private String buildUrl(Request request){
-        String encQuery = null;
-        try {
-            encQuery = URLEncoder.encode(request.query, "UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            log().error("Unsupported Encoding!");
-        }
-        // if we request not the first page add start parameter to URL
+        // if we are requesting not the first page add start parameter to URL
         String startParam = (request.start >= getMaxResultsPerPage()) ? "&start=" + (request.start + 1)  : "";
-        return "http://www.faroo.com/api?q=" + encQuery
+        return "http://www.faroo.com/api?q=" + encodeQuery(request)
                 + startParam
                 + "&length=10&l=en&src=news&i=false&f=json&key=" + appKey;
     }
 
+    /**
+     * Timer to make a delay between two requests to satisfy API requirements.
+     */
     private void pauseBetweenRequests() {
         long timeToWait = 0;
         if(lastAccessed > 0)

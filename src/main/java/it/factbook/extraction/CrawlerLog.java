@@ -23,7 +23,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- *
+ * Reads/writes log of search engine requests and page downloads, implemented using MySQL tables:
+ * RequestLog and CrawlerLog in schema extraction.
  */
 @Repository
 public class CrawlerLog {
@@ -36,14 +37,15 @@ public class CrawlerLog {
     }
 
     /**
-     * Method returns links that haven't downloaded earlier
+     * Filters provided collection and removes already downloaded links.
+     *
      * @param linksFound - list of links you want to check
      * @return list of links haven't ever downloaded
      */
     public List<Link> getLinksToCrawl(List<Link> linksFound){
         if (linksFound == null || linksFound.size() == 0) return new ArrayList<>();
         List<Link> decodedLinks = linksFound.stream()
-                .map(l -> new Link(WebHelper.getDecodedURL(l.getUrl()), l.getTitle(), l.getSnippet(), l.getGolem()))
+                .map(l -> new Link(WebHelper.decodeURL(l.getUrl()), l.getTitle(), l.getSnippet(), l.getGolem()))
                 .collect(Collectors.toList());
         String select = "SELECT urlHash FROM CrawlerLog WHERE urlHash IN (";
         Object[] params = new Object[linksFound.size()];
@@ -68,7 +70,8 @@ public class CrawlerLog {
 
 
     /**
-     * Write to log all links passed to the method
+     * Writes to log all links passed to the method.
+     *
      * @param profileId - ID of profile these links found for
      * @param searchEngine - enum value of Search Engine client, that found these links. One for all links.
      * @param requestLogId - ID of request log record. Must identify request that returns these results
@@ -83,7 +86,7 @@ public class CrawlerLog {
             @Override
             public void setValues(PreparedStatement ps, int i)
                     throws SQLException {
-                String docUrl = WebHelper.getDecodedURL(links.get(i).getUrl());
+                String docUrl = WebHelper.decodeURL(links.get(i).getUrl());
                 ps.setLong      (1, profileId);
                 ps.setInt       (2, searchEngine.getId());
                 ps.setLong      (3, requestLogId);
@@ -101,11 +104,13 @@ public class CrawlerLog {
     }
 
     /**
-     * Add to link records info about downloaded document
-     * @param requestLogId
-     * @param url
-     * @param articleBody
-     * @param downloadStart
+     * Updates the link record specified by requestLogId and URL with status and properties of downloaded page.
+     *
+     * @param requestLogId surrogate key of search engine request that returned this link
+     * @param url URL as a string
+     * @param articleBody downloaded content
+     * @param downloadStart timestamp of starting download in millis
+     * @param errorMsg error returned by server
      */
     public void logDownloadedArticles(long requestLogId, String url, String articleBody,
                                       long downloadStart, String errorMsg){
@@ -125,18 +130,18 @@ public class CrawlerLog {
             ps.setInt       (4, errCodeFinal);
             ps.setString    (5, errorMsg);
             ps.setLong      (6, requestLogId);
-            ps.setString    (7, DigestUtils.sha1Hex(WebHelper.getDecodedURL(url)));
+            ps.setString    (7, DigestUtils.sha1Hex(WebHelper.decodeURL(url)));
         });
     }
 
     /**
+     * Writes to log information about search request.
      *
-     *
-     * @param profileId
-     * @param searchEngine
-     * @param profileVersion
-     * @param request
-     * @return
+     * @param profileId ID of profile these links found for
+     * @param searchEngine identifier of the search engine
+     * @param profileVersion artificial identifier of the profile version, actually it is timestamp of receiving profile
+     * @param request text of the query to a search engine
+     * @return surrogate key of the written record (requestLogId)
      */
     public long logSearchRequest(long profileId, SearchEngine searchEngine, long profileVersion, Request request){
         String INSERT = "INSERT INTO RequestLog (profileId, searchEngineId, profileVersion, golemId, query, queryHash, requested, start) " +
@@ -158,10 +163,11 @@ public class CrawlerLog {
     }
 
     /**
+     * Reads all previous requests for the specified query.
      *
-     * @param query
-     * @param searchEngine
-     * @return
+     * @param query full text of query to a search engine
+     * @param searchEngine identifier of the search engine
+     * @return a list of all previous requests
      */
     public List<Request> getRequests(String query, SearchEngine searchEngine){
         String SELECT = "SELECT requestLogId, query, golemId, requested, start FROM RequestLog WHERE searchEngineId = ? AND queryHash = ?";
@@ -172,9 +178,11 @@ public class CrawlerLog {
     }
 
     /**
+     * Updates log record of a search engine request with the details about search results.
      *
-     * @param requestLogId
-     * @param resultsReturned
+     * @param requestLogId surrogate key of the search engine request
+     * @param resultsReturned count of returned results
+     * @param newLinks count of links that were found for the first time
      */
     public void logReturnedResults(long requestLogId, int resultsReturned, int newLinks){
         String UPDATE = "UPDATE RequestLog SET resultsReturned=?, newLinks=? WHERE requestLogId=?";
@@ -183,9 +191,10 @@ public class CrawlerLog {
     }
 
     /**
+     * Updates cash hits counter.
      *
-     * @param query
-     * @param searchEngine
+     * @param query full text of query to a search engine
+     * @param searchEngine identifier of the search engine
      */
     public void incrementCashHits(String query, SearchEngine searchEngine) {
         String queryHash = DigestUtils.sha1Hex(query);

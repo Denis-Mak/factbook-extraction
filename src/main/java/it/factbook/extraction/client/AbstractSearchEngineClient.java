@@ -20,9 +20,27 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.*;
 
 /**
+ * Implements common methods of all search engine clients.
+ * Typical sequence of a client job:
+ * <ul>
+ *     <li>receive message with search profile</li>
+ *     <li>build queries for the search engine from profile</li>
+ *     <li>run queries </li>
+ *     <li>parse results and pack into a list of links</li>
+ *     <li>send message to crawler</li>
+ * </ul>
+ *
+ * The default implementation of query builder using basic space separated text
+ * supported by all search engines.
+ * The inherited classes must implements three simple methods to provide information about the search engine
+ * ({@link #log()}, {@link #getMaxResultsPerPage()}, {@link #searchEngine()})
+ *
+ * And main method {@link #getLinks(Request)} to send the request and parse results.
  *
  */
 @Component
@@ -41,21 +59,50 @@ public abstract class AbstractSearchEngineClient implements MessageListener {
 
     static ObjectMapper jsonMapper = new ObjectMapper();
 
+    /**
+     * Returns logger of the inherited class
+     *
+     * @return an instance of {@link Logger} configured to the particular class
+     */
     protected abstract Logger log();
 
+    /**
+     * Returns search engine indicator of the particular client implementation
+     *
+     * @return a value of {@link SearchEngine}
+     */
     protected abstract SearchEngine searchEngine();
 
+    /**
+     * Returns maximum results per page limit for the particular engine
+     *
+     * @return integer from 0 to MAX_INT
+     */
     protected abstract int getMaxResultsPerPage();
 
+    /**
+     * Runs the provided request, parses the results and return a list of {@link Link} that contains URL,
+     * title and other properties of found page.
+     *
+     * @param request a query to the search engine
+     * @return the list of {@link Link} or empty list if nothing was found
+     */
     protected abstract List<Link> getLinks(Request request);
 
+    /**
+     * Receives incoming message, and runs all methods of the processing sequence.
+     * It is like controller of a search engine client.
+     *
+     * @param message an instance of {@link ProfileMessage}
+     */
     @Override
     public void onMessage(Message message) {
         ProfileMessage profileMessage = unpackProfileMessage(message);
         long profileVersion = System.currentTimeMillis();
-        List<Request> queries = getQueries(profileMessage);
-        for(Request request : queries){
-            Integer startRecord = checkPreviousRequests(crawlerLog.getRequests(request.query, searchEngine()));
+        List<Request> requests = getQueries(profileMessage);
+        for(Request request : requests){
+            //get all previous requests for this query and find if we need to get search results and what page of the results
+            Integer startRecord = getStartRecordNm(crawlerLog.getRequests(request.query, searchEngine()));
             if (startRecord != null) {
                 // set start record field
                 request = new Request(request.golem, request.query, startRecord, request.requested);
@@ -70,7 +117,17 @@ public abstract class AbstractSearchEngineClient implements MessageListener {
         }
     }
 
-    protected Integer checkPreviousRequests(List<Request> requests){
+    /**
+     * Returns the first record of the search result to ask from search engine.
+     * Checks if previous query not older then a month. If this request
+     * is absolutely new - returns 0 (the beginning of search results),
+     * if we have parsed maximum depth of results for this
+     * request - returns null.
+     *
+     * @param requests all previous requests for this query
+     * @return index of the first record to request
+     */
+    protected Integer getStartRecordNm(List<Request> requests){
         // If there was no previous requests, query the first page of search results
         if (requests == null || requests.size() < 1){
             return 0;
@@ -89,6 +146,12 @@ public abstract class AbstractSearchEngineClient implements MessageListener {
         return null;
     }
 
+    /**
+     * Extract {@link ProfileMessage} from {@link Message}
+     *
+     * @param message received message from message queue, an instance implemented {@link Message} interface
+     * @return unpacked instance of {@link ProfileMessage}
+     */
     private ProfileMessage unpackProfileMessage(Message message){
         ProfileMessage profileMessage = null;
         try {
@@ -100,6 +163,14 @@ public abstract class AbstractSearchEngineClient implements MessageListener {
         return profileMessage;
     }
 
+    /**
+     * Creates and send a message to the Crawler. All processed link and profile metadata packed to this message.
+     *
+     * @param profileId ID of the profile that initiated the search
+     * @param searchEngine search engine that returned results
+     * @param requestLogId surrogate key of this request for searching
+     * @param linksToCrawl a list of links extracted from the search results
+     */
     protected void sendToCrawler(long profileId, SearchEngine searchEngine, long requestLogId, List<Link> linksToCrawl){
         if (linksToCrawl == null || linksToCrawl.size() < 1) {
             return;
@@ -117,9 +188,17 @@ public abstract class AbstractSearchEngineClient implements MessageListener {
         }
     }
 
+    /**
+     * Build a list of queries on the basis of the specified profile. In the default implementation each line
+     * forms a query to a search engine. Format of the query: user entered words + all idioms from the profile line
+     * (separated by space)
+     *
+     * @param profileMessage message contains search profile
+     * @return the list of queries to a search engine
+     */
     protected List<Request> getQueries(ProfileMessage profileMessage) {
         String initialQuery = (profileMessage.getInitialQuery() != null) ? profileMessage.getInitialQuery() + " " : "";
-        if (profileMessage.getQueryLines() != null && profileMessage.getQueryLines().size() > 0) {
+        if (!profileMessage.getQueryLines().isEmpty()) {
             List<Request> wordgramQueries = new ArrayList<>();
             StringJoiner sj = new StringJoiner(" ", initialQuery, "");
             for (List<List<WordForm>> line: profileMessage.getQueryLines()){
@@ -136,13 +215,19 @@ public abstract class AbstractSearchEngineClient implements MessageListener {
             return wordgramQueries;
         } else if (!"".equals(initialQuery)) {
             Request request = new Request(predictGolem(initialQuery), initialQuery.trim(), 0, new DateTime());
-            return Arrays.asList(request);
+            return Collections.singletonList(request);
         } else {
             return Collections.<Request>emptyList();
         }
 
     }
 
+    /**
+     * Returns the Golem based on text language.
+     *
+     * @param str text to analise
+     * @return a value of {@link Golem}
+     */
     protected Golem predictGolem(String str){
         switch (langDetector.detectLanguage(str)){
             case RU:
@@ -152,5 +237,21 @@ public abstract class AbstractSearchEngineClient implements MessageListener {
             default:
                 return Golem.UNKNOWN;
         }
+    }
+
+    /**
+     * Encodes the query
+     *
+     * @param request a request to a search engine
+     * @return encoded query from the request
+     */
+    protected String encodeQuery(final Request request){
+        String encQuery = null;
+        try {
+            encQuery = URLEncoder.encode(request.query, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            log().error("Unsupported Encoding!");
+        }
+        return encQuery;
     }
 }

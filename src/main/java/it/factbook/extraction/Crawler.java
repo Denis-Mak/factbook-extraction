@@ -42,7 +42,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- *
+ * Downloads pages from the internet according to the provided URLs. Parsing of pages based on Apache Tika,
+ * for main article extraction used BoilerPipe lib and DCTExtractor lib for extracting published date.
+ * Accepts two types of documents: HTML and PDF
  */
 @Component
 public class Crawler implements MessageListener{
@@ -64,6 +66,13 @@ public class Crawler implements MessageListener{
         jsonMapper.registerModule(new JodaModule());
     }
 
+    /**
+     * Handles incoming message contains links to download. Log results and trace information of downloading to the
+     * DB even if downloading is failed. Processing of links do in parallel and if body of an article is not empty
+     * it sends to the next handler.
+     *
+     * @param message an {@link Message} with {@link SearchResultsMessage} in the body
+     */
     @Override
     public void onMessage(Message message) {
         SearchResultsMessage searchResultsMessage = new SearchResultsMessage();
@@ -119,6 +128,17 @@ public class Crawler implements MessageListener{
         }
     }
 
+    /**
+     * Downloading and parsing the page specified by URL.
+     *
+     * @param urlStr url of the page to download
+     * @param metadata gathered by Tika metadata of the page
+     * @return Article text and modified metadata
+     * @throws IOException when URL is unavailable
+     * @throws TikaException on parsing errors
+     * @throws SAXException on malformed documents
+     * @throws DCTExtractorException errors during published date extraction
+     */
     protected String parseArticle(String urlStr, Metadata metadata) throws IOException, TikaException, SAXException, DCTExtractorException {
         String content = "";
         URL url = new URL(urlStr);
@@ -148,6 +168,16 @@ public class Crawler implements MessageListener{
         return content;
     }
 
+    /**
+     * Parses text and extracts published date choosing it by using learning algorithm. Support english (GB/US) format,
+     * french, dutch, german and russian. To run it needs wapiti executable.
+     *
+     * @param urlStr url to download
+     * @param metadata metadata of the page
+     * @throws DCTExtractorException errors during published date extraction
+     * @throws IOException when URL is unavailable
+     */
+    //TODO Puzzle out the Tika to eliminate double downloading to pass input stream to DCTExtractor
     protected void getTitleAndPublished(String urlStr, Metadata metadata) throws DCTExtractorException, IOException{
         File wapitiBinaryFile = new File(wapitiBinaryPath);
         DCTExtractor extractor = new DCTExtractor(wapitiBinaryFile);
@@ -185,6 +215,10 @@ public class Crawler implements MessageListener{
         }
     }
 
+    /**
+     * Kills hanged connections after timeout. Connections hang when they do not close socket and send small portions
+     * of data very rarely.
+     */
     private static class InterruptThread implements Runnable {
         Thread parent;
         HttpURLConnection con;
@@ -210,6 +244,13 @@ public class Crawler implements MessageListener{
         }
     }
 
+    /**
+     * Opens connection to the provided URL and starts thread to kill it after timeout
+     *
+     * @param url url to download
+     * @return an instnce of {@link HttpURLConnection}
+     * @throws IOException when URL is unavailable
+     */
     private static HttpURLConnection getConnection(URL url) throws IOException{
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         connection.setConnectTimeout(CONNECTION_TIMEOUT);

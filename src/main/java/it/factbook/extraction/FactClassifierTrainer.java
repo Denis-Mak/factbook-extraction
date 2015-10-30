@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 
 /**
- *
+ * Trains HAM/SPAM classifier for facts
  */
 @Component
 public class FactClassifierTrainer{

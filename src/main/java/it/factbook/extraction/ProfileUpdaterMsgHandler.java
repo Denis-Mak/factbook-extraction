@@ -14,7 +14,8 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 
 /**
- *
+ * Updates profile adding new lines from the result of parsing the provided fact. Used as RPC returns
+ * a new profile with added lines.
  */
 @Component
 public class ProfileUpdaterMsgHandler {

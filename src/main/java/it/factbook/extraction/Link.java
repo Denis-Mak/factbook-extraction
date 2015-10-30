@@ -6,7 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
+ * Container of the information about one page we get from the search results of a search engine.
  */
 public class Link {
     private static final Logger log = LoggerFactory.getLogger(Link.class);
@@ -26,10 +26,18 @@ public class Link {
         this.golem      = golem;
     }
 
+    /**
+     *
+     * @return SHA1 hash of the link URL
+     */
     public String getUrlHash() {
         return urlHash;
     }
 
+    /**
+     *
+     * @return string representation of the link URL
+     */
     public String getUrl() {
         return url;
     }
@@ -38,6 +46,10 @@ public class Link {
         this.url = url;
     }
 
+    /**
+     *
+     * @return title of the found page
+     */
     public String getTitle() {
         return title;
     }
@@ -46,6 +58,10 @@ public class Link {
         this.title = title;
     }
 
+    /**
+     *
+     * @return brief text of the found page with found words
+     */
     public String getSnippet() {
         return snippet;
     }
@@ -54,6 +70,10 @@ public class Link {
         this.snippet = snippet;
     }
 
+    /**
+     *
+     * @return dictionary that contains words from search query
+     */
     public Golem getGolem() {
         return golem;
     }
