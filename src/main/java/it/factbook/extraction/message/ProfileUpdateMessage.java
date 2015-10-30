@@ -4,7 +4,7 @@ import it.factbook.search.FoundFact;
 import it.factbook.search.SearchProfile;
 
 /**
- *
+ * Contains the profile to update and the fact using to this update.
  */
 public class ProfileUpdateMessage {
     private SearchProfile searchProfile;

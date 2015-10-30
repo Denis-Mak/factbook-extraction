@@ -47,14 +47,19 @@ public class GoogleClient extends AbstractSearchEngineClient{
 
     private static long lastAccessed = 0;
 
+    /**
+     * Runs HTTP request using {@link WebHelper#getContent(String)} and parse results.
+     *
+     * @param request a query to the search engine
+     * @return a list of links or empty list is nothing was found
+     */
     @Override
     protected List<Link> getLinks(Request request){
         List<Link> links = new ArrayList<>(getMaxResultsPerPage());
         try {
             pauseBetweenRequests();
             String response = WebHelper.getContent(buildUrl(request));
-            JsonNode root = jsonMapper.readTree(response);
-            JsonNode results = root.path("items");
+            JsonNode results = jsonMapper.readTree(response).path("items");
             Iterator<JsonNode> itr = results.elements();
             while (itr.hasNext()) {
                 JsonNode res = itr.next();
@@ -70,22 +75,25 @@ public class GoogleClient extends AbstractSearchEngineClient{
         return links;
     }
 
+    /**
+     * Builds Google API request URL.
+     *
+     * @param request search query
+     * @return HTTP request
+     */
     private String buildUrl(Request request){
-        String encQuery = null;
-        try {
-            encQuery = URLEncoder.encode(request.query, "UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            log().error("Unsupported Encoding!");
-        }
         // if we request not the first page add start parameter to URL
         String startParam = (request.start >= getMaxResultsPerPage()) ? "&start=" + (request.start + 1)  : "";
         return "https://www.googleapis.com/customsearch/v1?key=" + appKey +
                 "&lr=lang_" + request.golem.mainLang().getCode().toLowerCase() +
                 "&cx=" + userId + ":" + engineId +
-                "&q=" + encQuery +
+                "&q=" + encodeQuery(request) +
                 startParam;
     }
 
+    /**
+     * Timer to make a delay between two requests to satisfy API requirements.
+     */
     private void pauseBetweenRequests() {
         long timeToWait = 0;
         if(lastAccessed > 0)

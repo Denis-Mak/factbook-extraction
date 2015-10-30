@@ -229,9 +229,6 @@ tasks.xml
 amqp.properties
 amqp.staging.properties
 amqp.test.properties
-contextSearch.properties
-contextSearch.staging.properties
-contextSearch.test.properties
 jdbc.properties
 jdbc.staging.properties
 jdbc.test.properties

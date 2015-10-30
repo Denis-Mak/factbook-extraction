@@ -14,31 +14,71 @@ import java.io.*;
 import java.net.*;
 
 /**
- *
+ * Collection of methods to handle HTTP request, response and authentication.
  */
 public class WebHelper {
     private static final Logger log = LoggerFactory.getLogger(WebHelper.class);
 
     private static final String DEFAULT_USER_AGENT = "factbook-robot";
 
+    /**
+     * Downloads a page from the provided URL
+     *
+     * @param url url of the page
+     * @return content of the page
+     * @throws IOException if page is unavailable
+     */
     public static String getContent(String url) throws IOException{
         return getContent(url, DEFAULT_USER_AGENT);
     }
 
+    /**
+     * Downloads a page from the provided URL
+     *
+     * @param url url of the page
+     * @param userAgent string to put into user-agent HTTP request property
+     * @return content of the page
+     * @throws IOException if page is unavailable
+     */
     public static String getContent(String url, String userAgent) throws IOException {
         return getContent(url, userAgent, null, null);
     }
 
+    /**
+     * Downloads a page with authorization from the provided URL.
+     *
+     * @param url url of the page
+     * @param userAgent string to put into user-agent HTTP request property
+     * @param username login
+     * @param password password for authorization
+     * @return content of the page
+     * @throws IOException if page is unavailable
+     */
     public static String getContent(String url, String userAgent, String username, String password)
             throws IOException{
         return readInputStream(getInputStream(url, userAgent, username, password));
     }
 
+    /**
+     * Downloads a page with OAuth authorization from the provided URL.
+     *
+     * @param url url of the page
+     * @param clientKey unique identifier of the client
+     * @param clientSecret public part of the OAuth key
+     * @return content of the page
+     * @throws IOException if page is unavailable
+     */
     public static String getContentOAuth(String url, String clientKey, String clientSecret)
             throws IOException{
         return readInputStream(getInputStreamOAuth(url, clientKey, clientSecret));
     }
 
+    /**
+     * Reads the provided {@link InputStream}
+     *
+     * @param is an instance of {@link InputStream}
+     * @return page content as a string
+     */
     private static String readInputStream(InputStream is){
         String line;
         StringBuilder sb = new StringBuilder();
@@ -62,14 +102,16 @@ public class WebHelper {
         return sb.toString();
     }
 
-    public static InputStream getInputStream(String url) throws IOException{
-        return getInputStream(url, DEFAULT_USER_AGENT);
-    }
-
-    public static InputStream getInputStream (String url, String userAgent) throws IOException{
-        return getInputStream(url, userAgent, null, null);
-    }
-
+    /**
+     * Opens input stream of the provided URL with basic authentication.
+     *
+     * @param url url of the page
+     * @param userAgent string to put into user-agent HTTP request property
+     * @param username login
+     * @param password password for authorization
+     * @return content of the page
+     * @throws IOException if page is unavailable
+     */
     public static InputStream getInputStream(String url, String userAgent, String username, String password)
             throws IOException{
         InputStream is;
@@ -92,6 +134,15 @@ public class WebHelper {
         return TikaInputStream.get(is);
     }
 
+    /**
+     * Opens input stream of the provided URL with OAuth authentication.
+     *
+     * @param url url of the page
+     * @param clientKey unique identifier of the client
+     * @param clientSecret public part of the OAuth key
+     * @return content of the page
+     * @throws IOException if page is unavailable
+     */
     public static InputStream getInputStreamOAuth (String url, String clientKey, String clientSecret)
             throws IOException{
         OAuthConsumer consumer = new DefaultOAuthConsumer(clientKey, clientSecret);
@@ -112,7 +163,13 @@ public class WebHelper {
         return TikaInputStream.get(is);
     }
 
-    public static String getDecodedURL(String url){
+    /**
+     * Decodes the specified URL from the <CODE>application/x-www-form-urlencoded</CODE> MIME format.
+     *
+     * @param url any URL as a string
+     * @return decoded URL
+     */
+    public static String decodeURL(String url){
         try {
             String decodedUrl = URLDecoder.decode(url, "UTF-8");
             int startDecodedPart = getStartDecodedPart(url, decodedUrl);
@@ -138,6 +195,12 @@ public class WebHelper {
         return -1;
     }
 
+    /**
+     * Removes all tags from text
+     *
+     * @param str input text
+     * @return text cleaned of tags
+     */
     public static String removeTags(String str){
         return str.replaceAll("<[^>]*>", "");
     }

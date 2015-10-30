@@ -13,8 +13,6 @@ import it.factbook.search.DocType;
 import it.factbook.search.Fact;
 import it.factbook.search.FactProcessor;
 import it.factbook.search.repository.FactAdapter;
-import it.factbook.search.repository.SemanticSearch;
-import it.factbook.search.repository.jdbc.SphinxSliceIndexAdapter;
 import it.factbook.util.StringUtils;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -31,7 +29,8 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- *
+ * Parses text of the downloaded article to facts, adds additional metadata like sense, fingerprint factuality to these
+ * facts. This handler implementation uses parser class {@link FactProcessor} from factbook-search library.
  */
 @Component
 public class FactSaver implements MessageListener{
@@ -55,6 +54,12 @@ public class FactSaver implements MessageListener{
 
     private static final Logger log = LoggerFactory.getLogger(FactSaver.class);
 
+    /**
+     * Handles received message, makes preliminary clean up of text, splits to facts, stores them in database and
+     * pack the facts into message and pass it for index updating.
+     *
+     * @param jsonMsg an instance of {@link DocumentMessage}
+     */
     @Override
     public void onMessage(Message jsonMsg) {
         DocumentMessage msg = new DocumentMessage();
@@ -74,10 +79,10 @@ public class FactSaver implements MessageListener{
 
         FactsMessage factsMessage = new FactsMessage();
         factsMessage.setFacts(facts);
-        passFactsToClusterProcessor(factsMessage);
+        passFactsToIndexUpdater(factsMessage);
     }
 
-    private void passFactsToClusterProcessor(FactsMessage factsMessage) {
+    private void passFactsToIndexUpdater(FactsMessage factsMessage) {
         try {
             jsonMapper.registerModule(new JodaModule());
             String json = jsonMapper.writeValueAsString(factsMessage);
@@ -108,11 +113,13 @@ public class FactSaver implements MessageListener{
     List<Fact> buildListOfFacts(DocumentMessage msg){
         List<Fact> facts = new ArrayList<>();
         String title = msg.getTitle();
-        String url = WebHelper.getDecodedURL(msg.getUrl());
+        String url = WebHelper.decodeURL(msg.getUrl());
         Language language = langDetector.detectLanguage(msg.getContent());
         DateTime published = msg.getPublished();
         DocType docType = msg.getDocType();
         int startPos = 0;
+        // This splitting text by end-of-lines is a least-evil solution, because it is very common for web-pages
+        // use line ends as a full stop of a sentence. We can deal with it only after improve OpenNLP sentence splitter.
         for (String textBlock:msg.getContent().split("\n")){
             if (StringUtils.trimSplitters(textBlock).trim().length() > 0) {
                 List<Fact> factsInBlock = factProcessor.splitDocument(textBlock, msg.getGolem(), startPos, title,

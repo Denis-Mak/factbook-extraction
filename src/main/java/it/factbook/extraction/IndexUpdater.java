@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- *
+ * Updates context and semantic search indexes calling associated adapters
  */
 @Component
 public class IndexUpdater implements MessageListener{
@@ -46,6 +46,11 @@ public class IndexUpdater implements MessageListener{
 
     private static final Logger log = LoggerFactory.getLogger(IndexUpdater.class);
 
+    /**
+     * Handles incoming message and coordinates index updating.
+     *
+     * @param message an instance of {@link FactsMessage}
+     */
     @Override
     public void onMessage(Message message) {
         try {

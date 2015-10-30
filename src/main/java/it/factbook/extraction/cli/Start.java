@@ -17,7 +17,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 /**
- *
+ * Command line utility to start and stop all handlers in the pipe
  */
 public class Start implements Daemon{
     private static final Logger log = LoggerFactory.getLogger(Start.class);
