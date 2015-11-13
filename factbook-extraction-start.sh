@@ -11,10 +11,12 @@ EXEC="/usr/bin/jsvc"
 FILE_PATH="/usr/local/$NAME"
 
 # The path to the folder containing the java runtime
-JAVA_HOME="/usr/java/jdk1.8.0_40/"
+if [ -z "$JAVA_HOME" ]; then
+    JAVA_HOME="/usr/java/default"
+fi
 
 # Our classpath including our jar file and the Apache Commons Daemon library
-CLASS_PATH="$FILE_PATH/factbook-it.factbook.extraction-1.0-SNAPSHOT.jar"
+CLASS_PATH="$FILE_PATH/!!artifactId!!-!!version!!.jar"
 
 # The fully qualified name of the class to execute
 CLASS="it.factbook.extraction.cli.Start"

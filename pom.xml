@@ -6,7 +6,7 @@
 
     <groupId>it.factbook</groupId>
     <artifactId>factbook-it.factbook.extraction</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0</version>
 
     <profiles>
         <profile>
@@ -328,6 +328,37 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>com.google.code.maven-replacer-plugin</groupId>
+                <artifactId>replacer</artifactId>
+                <version>1.5.3</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>replace</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <basedir>target/..</basedir>
+                    <includes>
+                        <include>factbook-extraction-start.sh</include>
+                    </includes>
+                    <outputDir>target</outputDir>
+                    <regex>false</regex>
+                    <replacements>
+                        <replacement>
+                            <token>!!version!!</token>
+                            <value>${version}</value>
+                        </replacement>
+                        <replacement>
+                            <token>!!artifactId!!</token>
+                            <value>${artifactId}</value>
+                        </replacement>
+                    </replacements>
+                </configuration>
             </plugin>
         </plugins>
     </build>
